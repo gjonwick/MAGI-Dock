@@ -296,14 +296,20 @@ class Receptor:
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
         res_str = ''
         for chain, contents in self.flexible_residues.items():
-            full_res = os.path.basename(self.pdbqt_location).split('.')[0]
+            pid = os.path.basename(self.pdbqt_location).split('.')[0]
+            if '_' in full_res:
+                pid = pid.split('_')[-1]
+                
             ress = []
             for res in contents:
-                ress.append(res.resi + str(res.resn))
+                #full_res_name = pid + ':' + chain + ':' + '_'.join(ress)
+                full_res_name = f'{pid}:{chain}:{res.resi+str(res.resn)}'
+                ress.append(full_res_name)
 
-            full_res += ':' + chain + ':' + '_'.join(ress)
-            res_str += full_res
+            
+            res_str += ','.join(ress)
 
+        logging.info(res_str)
         return res_str
 
 
@@ -671,6 +677,10 @@ def make_dialog():
         if len(sele) > 1:
             print('One selection at a time please!')
             logging.error('One selection at a time please!')
+            return
+        
+        if vinaInstance.receptor == None:
+            logging.error('Please generate the receptor first!')
             return
 
         sele = sele[0].text()    
