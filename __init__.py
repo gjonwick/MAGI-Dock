@@ -9,6 +9,9 @@ the additional features of PyQt5.
 
 '''
 
+#TODO: Fill the receptor and flexible residues lists before running the generation
+# then the user should be able to choose between receptors and flexibles
+
 #TODO: observer pattern, to broadcast the state of the box to every textfield
 
 from __future__ import absolute_import
@@ -295,22 +298,28 @@ class Receptor:
     def flexibleResiduesAsString(self):
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
         res_str = ''
-        for chain, contents in self.flexible_residues.items():
-            pid = os.path.basename(self.pdbqt_location).split('.')[0]
-            if '_' in full_res:
+        pid = os.path.basename(self.pdbqt_location).split('.')[0]
+        if '_' in pid:
                 pid = pid.split('_')[-1]
-                
+
+        chains = []
+        for chain, contents in self.flexible_residues.items():            
             ress = []
+            chain_string = f'{pid}:{chain}:'
             for res in contents:
                 #full_res_name = pid + ':' + chain + ':' + '_'.join(ress)
-                full_res_name = f'{pid}:{chain}:{res.resi+str(res.resn)}'
-                ress.append(full_res_name)
+                res_string = f'{res.resi+str(res.resn)}'
+                ress.append(res_string)
 
-            
-            res_str += ','.join(ress)
+            full_res_string = '_'.join(ress)
+            chain_string = chain_string + full_res_string
 
-        logging.info(res_str)
-        return res_str
+            chains.append(chain_string)
+        
+        final_str = ','.join(chains)
+
+        logging.info(final_str)
+        return final_str
 
 
 class Ligand:
