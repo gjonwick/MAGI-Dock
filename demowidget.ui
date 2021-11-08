@@ -74,7 +74,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>810</y>
+     <y>800</y>
      <width>85</width>
      <height>25</height>
     </rect>
@@ -164,6 +164,9 @@
    </property>
    <property name="singleStep">
     <double>0.250000000000000</double>
+   </property>
+   <property name="stepType">
+    <enum>QAbstractSpinBox::DefaultStepType</enum>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
@@ -409,7 +412,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="receptor_tab">
     <attribute name="title">
@@ -503,19 +506,6 @@
       <string>Flexible Residues:</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="importSele_btn">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>340</y>
-       <width>89</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Import</string>
-     </property>
-    </widget>
     <widget class="QLabel" name="label_13">
      <property name="geometry">
       <rect>
@@ -532,40 +522,14 @@
     <widget class="QPushButton" name="genReceptor_btn">
      <property name="geometry">
       <rect>
-       <x>100</x>
-       <y>400</y>
+       <x>160</x>
+       <y>200</y>
        <width>141</width>
        <height>25</height>
       </rect>
      </property>
      <property name="text">
       <string>Generate Receptor</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="removeReceptor_btn">
-     <property name="geometry">
-      <rect>
-       <x>320</x>
-       <y>340</y>
-       <width>89</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Remove </string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="removeFlexible_btn">
-     <property name="geometry">
-      <rect>
-       <x>485</x>
-       <y>340</y>
-       <width>89</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Remove</string>
      </property>
     </widget>
     <widget class="QListWidget" name="sele_lstw">
@@ -606,16 +570,217 @@
     <attribute name="title">
      <string>Ligands</string>
     </attribute>
+    <widget class="QListWidget" name="ligands_lstw">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>200</y>
+       <width>121</width>
+       <height>131</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_14">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>180</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ligands:</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="checkBox">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>80</y>
+       <width>131</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add Hydrogens</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="genLigands_btn">
+     <property name="geometry">
+      <rect>
+       <x>330</x>
+       <y>220</y>
+       <width>111</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Generate &gt;&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="ligandPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>40</y>
+       <width>200</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_15">
+     <property name="geometry">
+      <rect>
+       <x>90</x>
+       <y>45</y>
+       <width>51</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ligand:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>360</x>
+       <y>40</y>
+       <width>90</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loadLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>460</x>
+       <y>40</y>
+       <width>90</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="preparedLigands_lstw">
+     <property name="geometry">
+      <rect>
+       <x>500</x>
+       <y>200</y>
+       <width>121</width>
+       <height>131</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_16">
+     <property name="geometry">
+      <rect>
+       <x>500</x>
+       <y>180</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Prepared Ligands:</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="sele_lstw_2">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>160</y>
+       <width>135</width>
+       <height>171</height>
+      </rect>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_17">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>140</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PyMol selections:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="removeLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>340</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Remove</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="addLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>340</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="docking_tab">
+    <attribute name="title">
+     <string>Docking</string>
+    </attribute>
+    <widget class="QLineEdit" name="selectConfig_txt">
+     <property name="geometry">
+      <rect>
+       <x>220</x>
+       <y>30</y>
+       <width>200</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QPlainTextEdit" name="plainTextEdit">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>370</x>
      <y>440</y>
-     <width>1001</width>
-     <height>361</height>
+     <width>641</width>
+     <height>381</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="importSele_btn">
+   <property name="geometry">
+    <rect>
+     <x>270</x>
+     <y>800</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
    </property>
   </widget>
  </widget>

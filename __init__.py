@@ -16,6 +16,7 @@ the additional features of PyQt5.
 
 from __future__ import absolute_import
 from __future__ import print_function
+import enum
 
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
 # executed on PyMOL's startup. Only import such modules inside functions.
@@ -253,7 +254,7 @@ class VinaCoupler:
 
         def __init__(self)-> None:
             self.receptor = None
-            self.binders = None
+            self.ligands = {}
             self.receptors = {}
             self.form = None
 
@@ -266,20 +267,26 @@ class VinaCoupler:
         def setReceptor(self, receptor):
             self.receptor = receptor
 
-        def setBinders(self, binders):
-            self.binders = binders
+        def setLigands(self, ligands):
+            self.ligands = ligands
         
-        def addReceptor(self, receptor : 'Receptor'):
-            self.receptor[receptor.name] = receptor
-            self.loadReceptor(receptor.name)
+        def addLigand(self, ligand):
+            self.ligands[ligand.name] = ligand
+        
+        def removeLigand(self, id):
+            self.ligands.pop(id, None)
+        
+        # def addReceptor(self, receptor : 'Receptor'):
+        #     self.receptor[receptor.name] = receptor
+        #     self.loadReceptor(receptor.name)
 
         def generateReceptor(self):
             
             return
 
-        def loadReceptor(self):
-            self.form.receptor_lstw.addItem(receptor)
-            return
+        # def loadReceptor(self, receptor):
+        #     self.form.receptor_lstw.addItem(receptor)
+        #     return
 
             #return getStatusOutput(command)
         
@@ -346,8 +353,11 @@ class Receptor:
 
 class Ligand:
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, name, path) -> None:
+        self.name = name
+        self.path = path
+        self.fromPymol = True
+
 
 class bAPI:
 
@@ -611,6 +621,15 @@ def make_dialog():
         )
         if filename != ('', ''):
             form.config_txt.setText(filename[0])
+    
+    def browse_ligands():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            dialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.ligandPath_txt.setText(filename[0])
+
            
 
     def show_hide_Box():
@@ -643,6 +662,7 @@ def make_dialog():
         form.dimY.setSingleStep(step_size)
         form.dimZ.setSingleStep(step_size)
 
+    # TODO: make an observer
     def import_sele():
         # NOTE: using a listwidget for the selections view, because it is a higher level class, inheriting from
         # ListView. Use ListView if you want greater customization.
@@ -655,7 +675,45 @@ def make_dialog():
         form.sele_lstw.clear()
         form.sele_lstw.addItems(selections)
 
-        logging.info('Selections imported!')
+        form.sele_lstw_2.clear()
+        form.sele_lstw_2.addItems(selections)
+
+        #logging.info('Selections imported!')
+
+    # ligand handler methods
+    def update_ligands_list():
+        form.ligands_lstw.clear()
+        ligand_names = []
+        for ligand in vinaInstance.ligands.keys():
+            ligand_names.append(ligand)
+        form.ligands_lstw.addItems(ligand_names)
+    
+    def add_ligand():
+        selection = form.sele_lstw_2.selectedItems()
+        #logging.debug(selection)
+        for index, sele in enumerate(selection):
+            ligand = Ligand(sele.text(), '')
+            vinaInstance.addLigand(ligand)
+
+        print(vinaInstance.ligands)
+        update_ligands_list()
+
+    def load_ligand():
+        ligand_path = form.ligandPath_txt.text().strip()
+        ligand_name = ligand_path.split('/')[-1]
+
+        ligand = Ligand(ligand_name, ligand_path)
+        ligand.fromPymol = False
+        vinaInstance.addLigand(ligand)
+
+        update_ligands_list()
+        
+    def remove_ligand():
+        selection = form.ligands_lstw.selectedItems()
+        for index, item in enumerate(selection):
+            vinaInstance.removeLigand(item.text())
+
+        update_ligands_list()
 
     # async
     '''
@@ -666,7 +724,7 @@ def make_dialog():
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
-            logging.error('You can only have 1 receptor!')
+            # logging.error('You can only have 1 receptor!')
             return
         
         rec = Receptor()
@@ -685,7 +743,7 @@ def make_dialog():
             pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens' 
-        logging.info(command)
+        # logging.info(command)
 
         result, output = getStatusOutput(command)
         
@@ -768,7 +826,17 @@ def make_dialog():
     Generates pdbqt files for the ligands
     
     '''
+    #TODO: use the ligand fromPymol flag to distinguish which ligand to choose (the one from the file, or the one from pymol)
     def prepare_ligands():
+        
+        input_ligand_file = ''
+        output_ligand_file = ''
+        
+        prep_command = 'prepare_ligand'
+
+        command = f'{prep_command} -l {input_ligand_file} -o {output_ligand_file}'
+
+
 
         return
 
@@ -796,6 +864,12 @@ def make_dialog():
 
     form.genReceptor_btn.clicked.connect(generate_receptor)
     form.genFlexible_btn.clicked.connect(generate_flexible)
+    form.genLigands_btn.clicked.connect(prepare_ligands)
+
+    #form.sele_lstw_2.itemClicked(add_ligand)
+    form.loadLigand_btn.clicked.connect(load_ligand)
+    form.removeLigand_btn.clicked.connect(remove_ligand)
+    form.addLigand_btn.clicked.connect(add_ligand)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)
