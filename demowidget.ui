@@ -532,8 +532,8 @@
     <widget class="QPushButton" name="genReceptor_btn">
      <property name="geometry">
       <rect>
-       <x>160</x>
-       <y>200</y>
+       <x>100</x>
+       <y>400</y>
        <width>141</width>
        <height>25</height>
       </rect>

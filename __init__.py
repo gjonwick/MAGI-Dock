@@ -254,6 +254,11 @@ class VinaCoupler:
         def __init__(self)-> None:
             self.receptor = None
             self.binders = None
+            self.receptors = {}
+            self.form = None
+
+        def setForm(self, form):
+            self.form = form
 
         def setFlexibleResidues(self, residues):
             self.flexibleResidues = residues
@@ -264,9 +269,16 @@ class VinaCoupler:
         def setBinders(self, binders):
             self.binders = binders
         
+        def addReceptor(self, receptor : 'Receptor'):
+            self.receptor[receptor.name] = receptor
+            self.loadReceptor(receptor.name)
 
         def generateReceptor(self):
+            
+            return
 
+        def loadReceptor(self):
+            self.form.receptor_lstw.addItem(receptor)
             return
 
             #return getStatusOutput(command)
@@ -286,8 +298,18 @@ class VinaCoupler:
     def __getattr__(self, name):
         return getattr(self._instance, name)
 
+
+'''
+    attributes:
+        selection
+        name - should act as an unique identifier (ID)
+        pdbqt_location - the path to the generated/to be generated pdbqt file of the receptor
+        flexible_residues - a list (dictionary) of the flexible residues of the receptor
+'''
+
 class Receptor:
 
+    
     def __init__(self) -> None:
         self.selection = None
         self.name = None
@@ -310,7 +332,7 @@ class Receptor:
                 #full_res_name = pid + ':' + chain + ':' + '_'.join(ress)
                 res_string = f'{res.resi+str(res.resn)}'
                 ress.append(res_string)
-
+            #TODO: review this, flex_receptor doesn't accept it
             full_res_string = '_'.join(ress)
             chain_string = chain_string + full_res_string
 
@@ -508,6 +530,8 @@ def make_dialog():
     # populate the Window from our *.ui file which was created with the Qt Designer
     uifile = os.path.join(os.path.dirname(__file__), 'demowidget.ui')
     form = loadUi(uifile, dialog)
+    vinaInstance.setForm(form)
+    
     logger = CustomLogger(form.plainTextEdit)
     logger.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logging.getLogger().addHandler(logger)
