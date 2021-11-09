@@ -31,6 +31,7 @@ from pymol.viewing import center, show
 from pymol import stored
 
 MODULE_UNLOADED = False
+WORK_DIR = os.getcwd()
 
 # TODO: move this functions to utils
 
@@ -353,10 +354,26 @@ class Receptor:
 
 class Ligand:
 
-    def __init__(self, name, path) -> None:
+    def __init__(self, name, pdb) -> None:
         self.name = name
-        self.path = path
+        self.pdb = pdb
+        self.pdbqt = ''
         self.fromPymol = True
+
+    def prepare(self):
+
+        # if self.fromPymol:
+        #     self.pdb  = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdb')
+        #     try:
+        #         cmd.save(self.pdb , self.name)
+        #     except cmd.QuietException:
+        #         pass
+        # else:
+        #     pass
+        
+        # self.pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdbqt')
+        pass
+
 
 
 class bAPI:
@@ -678,31 +695,30 @@ def make_dialog():
         form.sele_lstw_2.clear()
         form.sele_lstw_2.addItems(selections)
 
-        #logging.info('Selections imported!')
+        logging.info('Selections imported!')
 
     # ligand handler methods
     def update_ligands_list():
         form.ligands_lstw.clear()
-        ligand_names = []
-        for ligand in vinaInstance.ligands.keys():
-            ligand_names.append(ligand)
+        ligand_names = [lig_id for lig_id in vinaInstance.ligands.keys()]
         form.ligands_lstw.addItems(ligand_names)
     
     def add_ligand():
         selection = form.sele_lstw_2.selectedItems()
-        #logging.debug(selection)
+        logging.debug(selection)
         for index, sele in enumerate(selection):
             ligand = Ligand(sele.text(), '')
             vinaInstance.addLigand(ligand)
 
         print(vinaInstance.ligands)
+        form.sele_lstw_2.clearSelection()
         update_ligands_list()
 
     def load_ligand():
-        ligand_path = form.ligandPath_txt.text().strip()
-        ligand_name = ligand_path.split('/')[-1]
+        ligand_pdb_path = form.ligandPath_txt.text().strip()
+        ligand_name = ligand_pdb_path.split('/')[-1].split('.')[0]
 
-        ligand = Ligand(ligand_name, ligand_path)
+        ligand = Ligand(ligand_name, ligand_pdb_path)
         ligand.fromPymol = False
         vinaInstance.addLigand(ligand)
 
@@ -724,7 +740,7 @@ def make_dialog():
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
-            # logging.error('You can only have 1 receptor!')
+            logging.error('You can only have 1 receptor!')
             return
         
         rec = Receptor()
@@ -743,7 +759,7 @@ def make_dialog():
             pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens' 
-        # logging.info(command)
+        logging.info(command)
 
         result, output = getStatusOutput(command)
         
@@ -825,25 +841,40 @@ def make_dialog():
     '''
     Generates pdbqt files for the ligands
     
+    1. save the molecule as pdb
+    2. run prepare ligand to generate pdbqt
     '''
     #TODO: use the ligand fromPymol flag to distinguish which ligand to choose (the one from the file, or the one from pymol)
     def prepare_ligands():
         
-        input_ligand_file = ''
-        output_ligand_file = ''
-        
+        SUCCESS_FLAG = True
+
+        ligand_selection = form.ligands_lstw.selectedItems()
+
+        WORK_DIR = os.getcwd() # TODO: temporary
+
         prep_command = 'prepare_ligand'
 
-        command = f'{prep_command} -l {input_ligand_file} -o {output_ligand_file}'
+        for index, ligand_name in enumerate(ligand_selection):
+            ligand = vinaInstance.ligands[ligand_name]
+            if ligand.fromPymol:
+                ligand_pdb = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdb')
+                ligand.pdb = ligand_pdb
+                try:
+                    cmd.save(ligand_pdb, ligand_name)
+                except cmd.QuietException:
+                    pass
+            else:
+                ligand_pdb = ligand.pdb
+            
+            ligand_pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdbqt')
+            
+            command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt}'
 
+            # result, output = getStatusOutput(command)
 
-
-        return
-
-
-    def remove_receptor():
-
-        return
+            # if result != 0:
+            #     print(f'Ligand {ligand.name} failed!')
 
     ########################## </Callbacks> #############################
 
@@ -860,6 +891,7 @@ def make_dialog():
     form.save_btn.clicked.connect(save_config)
     form.saveAs_btn.clicked.connect(saveAs_config)
     form.browse_btn.clicked.connect(browse)
+    form.browseLigand_btn.clicked.connect(browse_ligands)
     form.genBox_btn.clicked.connect(gen_box)
 
     form.genReceptor_btn.clicked.connect(generate_receptor)
@@ -870,6 +902,7 @@ def make_dialog():
     form.loadLigand_btn.clicked.connect(load_ligand)
     form.removeLigand_btn.clicked.connect(remove_ligand)
     form.addLigand_btn.clicked.connect(add_ligand)
+    form.loadLigand_btn.clicked.connect(load_ligand)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)

@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1020</width>
+    <width>880</width>
     <height>836</height>
    </rect>
   </property>
@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>160</y>
+     <y>610</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -36,7 +36,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>200</y>
+     <y>650</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -55,7 +55,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>120</y>
+     <y>570</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -73,7 +73,7 @@
   <widget class="QPushButton" name="close_btn">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>270</x>
      <y>800</y>
      <width>85</width>
      <height>25</height>
@@ -87,7 +87,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>125</y>
+     <y>575</y>
      <width>67</width>
      <height>17</height>
     </rect>
@@ -100,7 +100,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>165</y>
+     <y>615</y>
      <width>67</width>
      <height>17</height>
     </rect>
@@ -113,7 +113,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>205</y>
+     <y>655</y>
      <width>67</width>
      <height>17</height>
     </rect>
@@ -126,7 +126,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>160</y>
+     <y>610</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -145,7 +145,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>120</y>
+     <y>570</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -173,7 +173,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>205</y>
+     <y>655</y>
      <width>51</width>
      <height>17</height>
     </rect>
@@ -186,7 +186,7 @@
    <property name="geometry">
     <rect>
      <x>280</x>
-     <y>200</y>
+     <y>650</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -205,7 +205,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>165</y>
+     <y>615</y>
      <width>51</width>
      <height>17</height>
     </rect>
@@ -218,7 +218,7 @@
    <property name="geometry">
     <rect>
      <x>220</x>
-     <y>125</y>
+     <y>575</y>
      <width>51</width>
      <height>17</height>
     </rect>
@@ -231,7 +231,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>400</y>
+     <y>800</y>
      <width>85</width>
      <height>25</height>
     </rect>
@@ -244,7 +244,7 @@
    <property name="geometry">
     <rect>
      <x>275</x>
-     <y>15</y>
+     <y>465</y>
      <width>81</width>
      <height>25</height>
     </rect>
@@ -257,7 +257,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>15</y>
+     <y>465</y>
      <width>165</width>
      <height>25</height>
     </rect>
@@ -267,7 +267,7 @@
    <property name="geometry">
     <rect>
      <x>100</x>
-     <y>400</y>
+     <y>800</y>
      <width>89</width>
      <height>25</height>
     </rect>
@@ -280,7 +280,7 @@
    <property name="geometry">
     <rect>
      <x>185</x>
-     <y>15</y>
+     <y>465</y>
      <width>81</width>
      <height>25</height>
     </rect>
@@ -293,7 +293,7 @@
    <property name="geometry">
     <rect>
      <x>90</x>
-     <y>80</y>
+     <y>530</y>
      <width>65</width>
      <height>26</height>
     </rect>
@@ -315,7 +315,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>85</y>
+     <y>535</y>
      <width>67</width>
      <height>17</height>
     </rect>
@@ -328,7 +328,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>370</y>
+     <y>770</y>
      <width>85</width>
      <height>25</height>
     </rect>
@@ -338,7 +338,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>350</y>
+     <y>750</y>
      <width>81</width>
      <height>17</height>
     </rect>
@@ -351,7 +351,7 @@
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>265</y>
+     <y>715</y>
      <width>101</width>
      <height>25</height>
     </rect>
@@ -364,7 +364,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>265</y>
+     <y>715</y>
      <width>231</width>
      <height>25</height>
     </rect>
@@ -374,7 +374,7 @@
    <property name="geometry">
     <rect>
      <x>10</x>
-     <y>245</y>
+     <y>695</y>
      <width>67</width>
      <height>17</height>
     </rect>
@@ -387,7 +387,7 @@
    <property name="geometry">
     <rect>
      <x>250</x>
-     <y>80</y>
+     <y>530</y>
      <width>101</width>
      <height>23</height>
     </rect>
@@ -405,14 +405,17 @@
   <widget class="QTabWidget" name="tabWidget">
    <property name="geometry">
     <rect>
-     <x>370</x>
-     <y>10</y>
-     <width>641</width>
-     <height>421</height>
+     <x>10</x>
+     <y>40</y>
+     <width>861</width>
+     <height>411</height>
     </rect>
    </property>
+   <property name="cursor">
+    <cursorShape>IBeamCursor</cursorShape>
+   </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="receptor_tab">
     <attribute name="title">
@@ -593,24 +596,11 @@
       <string>Ligands:</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="checkBox">
-     <property name="geometry">
-      <rect>
-       <x>150</x>
-       <y>80</y>
-       <width>131</width>
-       <height>23</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Add Hydrogens</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="genLigands_btn">
      <property name="geometry">
       <rect>
        <x>330</x>
-       <y>220</y>
+       <y>300</y>
        <width>111</width>
        <height>25</height>
       </rect>
@@ -743,6 +733,19 @@
       <string>Add</string>
      </property>
     </widget>
+    <widget class="QCheckBox" name="checkBox">
+     <property name="geometry">
+      <rect>
+       <x>290</x>
+       <y>200</y>
+       <width>131</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add Hydrogens</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="docking_tab">
     <attribute name="title">
@@ -764,17 +767,25 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>440</y>
-     <width>641</width>
-     <height>381</height>
+     <y>460</y>
+     <width>501</width>
+     <height>361</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <property name="mouseTracking">
+    <bool>false</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="importSele_btn">
    <property name="geometry">
     <rect>
-     <x>270</x>
-     <y>800</y>
+     <x>10</x>
+     <y>10</y>
      <width>89</width>
      <height>25</height>
     </rect>
