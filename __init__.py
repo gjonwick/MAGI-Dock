@@ -333,12 +333,13 @@ class Receptor:
                 pid = pid.split('_')[-1]
 
         chains = []
+        full_res_string = ''
         for chain, contents in self.flexible_residues.items():            
             ress = []
             chain_string = f'{pid}:{chain}:'
             for res in contents:
                 #full_res_name = pid + ':' + chain + ':' + '_'.join(ress)
-                res_string = f'{res.resi+str(res.resn)}'
+                res_string = f'{str(res.resn) + res.resi}'
                 ress.append(res_string)
             #TODO: review this, flex_receptor doesn't accept it
             full_res_string = '_'.join(ress)
@@ -349,7 +350,8 @@ class Receptor:
         final_str = ','.join(chains)
 
         logging.info(final_str)
-        return final_str
+        # NOTE: should return final_string
+        return full_res_string
 
 
 class Ligand:
@@ -373,8 +375,6 @@ class Ligand:
         
         # self.pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdbqt')
         pass
-
-
 
 class bAPI:
 
@@ -552,7 +552,7 @@ def make_dialog():
     # create a new Window
     dialog = QtWidgets.QDialog()
     saveTo = ''
-    AUTODOCK_PATH = '/home/jurgen/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24'
+    #AUTODOCK_PATH = '/home/jurgen/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24'
 
     # populate the Window from our *.ui file which was created with the Qt Designer
     uifile = os.path.join(os.path.dirname(__file__), 'demowidget.ui')
@@ -821,10 +821,10 @@ def make_dialog():
         result, output = getStatusOutput(command)
 
         print(output)
-        logging.debug(output)
 
         if result == 0:
-
+            
+            logging.debug(f'{output}')        
             for chain, contents in chains.items():
                 for res in contents:
                     form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
@@ -855,7 +855,8 @@ def make_dialog():
 
         prep_command = 'prepare_ligand'
 
-        for index, ligand_name in enumerate(ligand_selection):
+        for index, ligand_selection in enumerate(ligand_selection):
+            ligand_name = ligand_selection.text()
             ligand = vinaInstance.ligands[ligand_name]
             if ligand.fromPymol:
                 ligand_pdb = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdb')
@@ -864,17 +865,30 @@ def make_dialog():
                     cmd.save(ligand_pdb, ligand_name)
                 except cmd.QuietException:
                     pass
-            else:
-                ligand_pdb = ligand.pdb
+            # else:
+            #     ligand_pdb = ligand.pdb
             
             ligand_pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdbqt')
-            
+            ligand.pdbqt = ligand_pdbqt
+
             command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt}'
 
-            # result, output = getStatusOutput(command)
+            result, output = getStatusOutput(command)
 
-            # if result != 0:
-            #     print(f'Ligand {ligand.name} failed!')
+            if result == 0:
+                logging.debug(output)
+
+                #ligand.pdbqt = ligand_pdbqt
+                form.preparedLigands_lstw.addItem(ligand.name)
+                logging.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
+            else:
+                logging.info(f'An error occurred while trying to prepare the ligand ...')
+                logging.info(output)
+    
+    def onCloseWindow():
+        cmd.delete('box')
+        cmd.delete('axes')
+        dialog.close()
 
     ########################## </Callbacks> #############################
 
@@ -906,7 +920,7 @@ def make_dialog():
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)
-    form.close_btn.clicked.connect(dialog.close)
+    form.close_btn.clicked.connect(onCloseWindow)
 
     return dialog
 
