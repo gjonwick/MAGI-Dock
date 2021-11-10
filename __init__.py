@@ -17,6 +17,13 @@ the additional features of PyQt5.
 from __future__ import absolute_import
 from __future__ import print_function
 import enum
+from subprocess import Popen, PIPE
+
+
+from OpenGL.GL import *
+from OpenGL.GLU import *
+from OpenGL.GLUT import *
+
 
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
 # executed on PyMOL's startup. Only import such modules inside functions.
@@ -247,7 +254,15 @@ class Box_s:
         return getattr(self._instance, name)
 
 
-# TODO: IMPORTANT! add coupling between vinaInstance receptors and listWidget
+# TODO: IMPORTANT! add coupling between vinaInstance receptors and listWidget (done)
+# TODO: make it thread safe!
+
+'''
+    attributes:
+        receptor/receptors - an instance holding the receptor/receptors currently initiated by the user
+        ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both receptors and ligands as they wish)
+    XXX:form - XXX:not needed
+'''
 
 class VinaCoupler:
 
@@ -351,7 +366,13 @@ class Receptor:
         logging.info(final_str)
         return final_str
 
-
+'''
+    attributes:
+        name - acts as an ID
+        pdb - the path to the pdb (or .gro, .mol2, etc.) file, if any
+        pdbqt - the path to the generated pdbqt file, if any
+        fromPymol - flag that tracks if the ligand is loaded from the user's local system, or from pymol
+'''
 class Ligand:
 
     def __init__(self, name, pdb) -> None:
@@ -533,6 +554,99 @@ def run_plugin_gui():
 
     dialog.show()
 
+def make_dialog_2():
+    from pymol.Qt import QtWidgets
+    from pymol.Qt import QtOpenGL
+    from pymol.Qt.utils import loadUi
+    from pymol.Qt.utils import getSaveFileNameWithExt
+    import numpy as np
+
+    class Ui_MainWindow(QtWidgets.QWidget):
+        def __init__(self, parent=None):
+            super(Ui_MainWindow, self).__init__()
+            self.widget = glWidget()
+            self.button = QtWidgets.QPushButton('Test', self)
+            mainLayout = QtWidgets.QHBoxLayout()
+            mainLayout.addWidget(self.widget)
+            mainLayout.addWidget(self.button)
+            self.setLayout(mainLayout)
+
+
+    class glWidget(QtOpenGL.QGLWidget):
+        def __init__(self, parent=None):
+            QtOpenGL.QGLWidget.__init__(self, parent)
+            self.setMinimumSize(640, 480)
+            self.dx = 0
+            self.dy = 0
+
+        def initializeGL(self):
+            glEnable(GL_DEPTH_TEST)
+            glEnable(GL_LIGHT0)
+            glEnable(GL_LIGHTING)
+            glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
+            glEnable(GL_COLOR_MATERIAL)
+
+        def paintGL(self):
+            
+            glMatrixMode(GL_PROJECTION)
+
+            glClearColor(0.0, 0.0, 0.0, 1.0)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+            glColor3f(0.0, 0.0, 1.0)
+            
+            
+
+            self.__drawCircleCursor(0.05, 0, 0)
+
+            # Drawing lines
+            glBegin(GL_LINES)
+
+            glVertex3f(-1.0, 0.0, 0.0)
+            glVertex3f(1.0, 0.0, 0.0)
+
+            glVertex3f(0.0, 1.0, 0.0)
+            glVertex3f(0.0, -1.0, 0.0)
+
+            glEnd()
+
+        
+        def resizeGL(self, w, h):
+            glViewport(0, 0, w, h)
+
+        def __drawCircleCursor(self, r, x, y, sides = 32):
+            glColor3f(0.5, 0.5, 1.0)
+            glBegin(GL_POLYGON)
+            for vertex in range(0, sides):
+                angle = float(vertex) * 2.0 * np.pi / sides
+                glVertex3f(np.cos(angle)*r, np.sin(angle)*r, 0.0)
+            
+            glEnd()
+
+        def mousePressEvent(self, event):
+            self.lastPos = event.pos()
+        
+        def mouseMoveEvent(self, event):
+            dx = event.x() - self.lastPos.x()
+            dy = event.y() - self.lastPos.y()
+
+            self.setDeltaX(dx)
+            self.setDeltaY(dy)
+
+            self.lastPos = event.pos()
+
+        def setDeltaX(self, val):
+            self.dx = val
+            glTranslatef(val, 0.0, 0.0)
+            
+        def setDeltaY(self, val):
+            self.dy = val
+            glTranslatef(0.0, val, 0.0)
+    
+    Form = QtWidgets.QMainWindow()
+    dialog = Ui_MainWindow(Form)    
+    
+    return dialog
+
 def make_dialog():
     
     # entry point to PyMOL's API
@@ -543,12 +657,70 @@ def make_dialog():
     # pymol.Qt provides the PyQt5 interface, but may support PyQt4
     # and/or PySide as well
     from pymol.Qt import QtWidgets
+    from pymol.Qt import QtOpenGL
+    from pymol.Qt import QtCore
     from pymol.Qt.utils import loadUi
     from pymol.Qt.utils import getSaveFileNameWithExt
+    import time
+
+    class ViewPort(QtOpenGL.QGLWidget):
+        def __init__(self, parent=None):
+            QtOpenGL.QGLWidget.__init__(self, parent)
+            self.setMinimumSize(640, 480)
+
+        def paintGL(self):
+            QtOpenGL.glClear(QtOpenGL.GL_COLOR_BUFFER_BIT | QtOpenGL.GL_DEPTH_BUFFER_BIT)
+            QtOpenGL.glLoadIdentity()
+            QtOpenGL.glTranslatef(-2.5, 0.5, -6.0)
+            QtOpenGL.glColor3f( 1.0, 1.5, 0.0 )
+            QtOpenGL.glPolygonMode(QtOpenGL.GL_FRONT, QtOpenGL.GL_FILL)
+            QtOpenGL.glBegin(QtOpenGL.GL_TRIANGLES)
+            QtOpenGL.glVertex3f(2.0,-1.2,0.0)
+            QtOpenGL.glVertex3f(2.6,0.0,0.0)
+            QtOpenGL.glVertex3f(2.9,-1.2,0.0)
+            QtOpenGL.glEnd()
+            QtOpenGL.glFlush()
+
+        def initializeGL(self):
+            QtOpenGL.glClearDepth(1.0)              
+            QtOpenGL.glDepthFunc(QtOpenGL.GL_LESS)
+            QtOpenGL.glEnable(QtOpenGL.GL_DEPTH_TEST)
+            QtOpenGL.glShadeModel(QtOpenGL.GL_SMOOTH)
+            QtOpenGL.glMatrixMode(QtOpenGL.GL_PROJECTION)
+            QtOpenGL.glLoadIdentity()                    
+            QtOpenGL.gluPerspective(45.0,1.33,0.1, 100.0) 
+            QtOpenGL.glMatrixMode(QtOpenGL.GL_MODELVIEW)
+
+    '''
+    Vina Thread used to execute docking job
+    '''
+    class VinaWorker(QtCore.QObject):
+        finished = QtCore.pyqtSignal()
+        progress = QtCore.pyqtSignal(int)
+        vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
+        
+
+        def run(self):
+            sample_command = 'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
+                                   --flex TESTING_RECEPTOR_1mrq_flex.pdbqt --ligand TESTING_LIGAND_str.pdbqt \
+                                   --config config.txt \
+                                   --exhaustiveness 32 --out TESTING_RECEPTOR_1mrq_flex_vina_out.pdbqt'
+
+            args = sample_command.split()
+
+            p = Popen(args, shell=False, stdout=PIPE, stderr=PIPE)
+            self.progress.emit('Working ...')
+
+            (out, err) = p.communicate()
+            self.finished.emit()
+        
+       
+
 
     #import boxAPI
     boxAPI = bAPI()
     vinaInstance = VinaCoupler()
+    #viewport = ViewPort()
     # create a new Window
     dialog = QtWidgets.QDialog()
     saveTo = ''
@@ -557,12 +729,38 @@ def make_dialog():
     # populate the Window from our *.ui file which was created with the Qt Designer
     uifile = os.path.join(os.path.dirname(__file__), 'demowidget.ui')
     form = loadUi(uifile, dialog)
+    
     vinaInstance.setForm(form)
     
     logger = CustomLogger(form.plainTextEdit)
     logger.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logging.getLogger().addHandler(logger)
     logging.getLogger().setLevel(logging.INFO)
+
+    def logToWidget(m):
+        logging.info(m)
+
+    def runLongTask():
+        form.thread = QtCore.QThread()
+        form.worker = VinaWorker()
+        form.worker.moveToThread(form.thread)
+        form.thread.started.connect(form.worker.run)
+        form.worker.finished.connect(form.thread.quit)
+        form.worker.finished.connect(form.worker.deleteLater)
+        form.thread.finished.connect(form.thread.deleteLater)
+        form.worker.progress.connect(logToWidget)
+
+        # start thread
+        form.thread.start()
+
+        # final resets
+        form.loadReceptor_btn.setEnabled(False)
+        form.thread.finished.connect(
+            lambda: form.loadReceptor_btn.setEnabled(True)
+        )
+
+        form.thread.finished.connect(logMessage)
+
     
     def updateCenterGUI(x, y, z):
         form.centerX.setValue(x)
@@ -878,6 +1076,7 @@ def make_dialog():
 
     ########################## </Callbacks> #############################
 
+    
 
     # bind callbacks
     form.centerX.valueChanged.connect(update)
@@ -903,6 +1102,7 @@ def make_dialog():
     form.removeLigand_btn.clicked.connect(remove_ligand)
     form.addLigand_btn.clicked.connect(add_ligand)
     form.loadLigand_btn.clicked.connect(load_ligand)
+    form.loadReceptor_btn.clicked.connect(runLongTask)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)
