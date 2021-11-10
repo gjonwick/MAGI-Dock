@@ -19,12 +19,6 @@ from __future__ import print_function
 import enum
 from subprocess import Popen, PIPE
 
-
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
-
-
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
 # executed on PyMOL's startup. Only import such modules inside functions.
 
@@ -271,6 +265,7 @@ class VinaCoupler:
         def __init__(self)-> None:
             self.receptor = None
             self.ligands = {}
+            self.ligands_to_dock = {}
             self.receptors = {}
             self.form = None
 
@@ -291,6 +286,13 @@ class VinaCoupler:
         
         def removeLigand(self, id):
             self.ligands.pop(id, None)
+
+        def addLigandToDock(self, ligand):
+            self.ligands_to_dock[ligand.name] = ligand
+        
+        def removeLigandToDock(self, id):
+            self.ligands_to_dock.pop(id, None)
+
         
         # def addReceptor(self, receptor : 'Receptor'):
         #     self.receptor[receptor.name] = receptor
@@ -554,99 +556,6 @@ def run_plugin_gui():
 
     dialog.show()
 
-def make_dialog_2():
-    from pymol.Qt import QtWidgets
-    from pymol.Qt import QtOpenGL
-    from pymol.Qt.utils import loadUi
-    from pymol.Qt.utils import getSaveFileNameWithExt
-    import numpy as np
-
-    class Ui_MainWindow(QtWidgets.QWidget):
-        def __init__(self, parent=None):
-            super(Ui_MainWindow, self).__init__()
-            self.widget = glWidget()
-            self.button = QtWidgets.QPushButton('Test', self)
-            mainLayout = QtWidgets.QHBoxLayout()
-            mainLayout.addWidget(self.widget)
-            mainLayout.addWidget(self.button)
-            self.setLayout(mainLayout)
-
-
-    class glWidget(QtOpenGL.QGLWidget):
-        def __init__(self, parent=None):
-            QtOpenGL.QGLWidget.__init__(self, parent)
-            self.setMinimumSize(640, 480)
-            self.dx = 0
-            self.dy = 0
-
-        def initializeGL(self):
-            glEnable(GL_DEPTH_TEST)
-            glEnable(GL_LIGHT0)
-            glEnable(GL_LIGHTING)
-            glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-            glEnable(GL_COLOR_MATERIAL)
-
-        def paintGL(self):
-            
-            glMatrixMode(GL_PROJECTION)
-
-            glClearColor(0.0, 0.0, 0.0, 1.0)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            glColor3f(0.0, 0.0, 1.0)
-            
-            
-
-            self.__drawCircleCursor(0.05, 0, 0)
-
-            # Drawing lines
-            glBegin(GL_LINES)
-
-            glVertex3f(-1.0, 0.0, 0.0)
-            glVertex3f(1.0, 0.0, 0.0)
-
-            glVertex3f(0.0, 1.0, 0.0)
-            glVertex3f(0.0, -1.0, 0.0)
-
-            glEnd()
-
-        
-        def resizeGL(self, w, h):
-            glViewport(0, 0, w, h)
-
-        def __drawCircleCursor(self, r, x, y, sides = 32):
-            glColor3f(0.5, 0.5, 1.0)
-            glBegin(GL_POLYGON)
-            for vertex in range(0, sides):
-                angle = float(vertex) * 2.0 * np.pi / sides
-                glVertex3f(np.cos(angle)*r, np.sin(angle)*r, 0.0)
-            
-            glEnd()
-
-        def mousePressEvent(self, event):
-            self.lastPos = event.pos()
-        
-        def mouseMoveEvent(self, event):
-            dx = event.x() - self.lastPos.x()
-            dy = event.y() - self.lastPos.y()
-
-            self.setDeltaX(dx)
-            self.setDeltaY(dy)
-
-            self.lastPos = event.pos()
-
-        def setDeltaX(self, val):
-            self.dx = val
-            glTranslatef(val, 0.0, 0.0)
-            
-        def setDeltaY(self, val):
-            self.dy = val
-            glTranslatef(0.0, val, 0.0)
-    
-    Form = QtWidgets.QMainWindow()
-    dialog = Ui_MainWindow(Form)    
-    
-    return dialog
-
 def make_dialog():
     
     # entry point to PyMOL's API
@@ -696,22 +605,38 @@ def make_dialog():
     '''
     class VinaWorker(QtCore.QObject):
         finished = QtCore.pyqtSignal()
-        progress = QtCore.pyqtSignal(int)
-        vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
-        
+        progress = QtCore.pyqtSignal()
 
         def run(self):
-            sample_command = 'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
+            vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
+            receptor = vinaInstance.receptor
+            #ligands_to_dock = vinaInstance.ligands_to_dock
+
+            # ligands_to_dock = ['str']
+            # ligand = vinaInstance.ligands['str']
+            # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
+            # suffix = receptor.pdbqt_location.split('/')[-1]
+            # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
+
+
+
+            sample_command = f'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
                                    --flex TESTING_RECEPTOR_1mrq_flex.pdbqt --ligand TESTING_LIGAND_str.pdbqt \
                                    --config config.txt \
                                    --exhaustiveness 32 --out TESTING_RECEPTOR_1mrq_flex_vina_out.pdbqt'
 
             args = sample_command.split()
 
-            p = Popen(args, shell=False, stdout=PIPE, stderr=PIPE)
-            self.progress.emit('Working ...')
+            p = Popen(args, shell=False)
+            self.progress.emit()
+            # for stdout_line in p.stdout.readlines():
+            #     self.progress.emit(stdout_line)
+            #     sys.stdout.flush()
+                # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
+            #p.stdout.close()
 
             (out, err) = p.communicate()
+
             self.finished.emit()
         
        
@@ -740,7 +665,7 @@ def make_dialog():
     def logToWidget(m):
         logging.info(m)
 
-    def runLongTask():
+    def runDockingJob():
         form.thread = QtCore.QThread()
         form.worker = VinaWorker()
         form.worker.moveToThread(form.thread)
@@ -748,18 +673,20 @@ def make_dialog():
         form.worker.finished.connect(form.thread.quit)
         form.worker.finished.connect(form.worker.deleteLater)
         form.thread.finished.connect(form.thread.deleteLater)
-        form.worker.progress.connect(logToWidget)
+        form.worker.progress.connect(lambda : logging.info('Working ... '))
 
         # start thread
         form.thread.start()
 
         # final resets
-        form.loadReceptor_btn.setEnabled(False)
+        form.runDocking_btn.setEnabled(False)
         form.thread.finished.connect(
-            lambda: form.loadReceptor_btn.setEnabled(True)
+            lambda: form.runDocking_btn.setEnabled(True)
         )
 
-        form.thread.finished.connect(logMessage)
+        form.thread.finished.connect(
+            lambda : logging.info('Finish!')
+        )
 
     
     def updateCenterGUI(x, y, z):
@@ -1116,7 +1043,7 @@ def make_dialog():
     form.removeLigand_btn.clicked.connect(remove_ligand)
     form.addLigand_btn.clicked.connect(add_ligand)
     form.loadLigand_btn.clicked.connect(load_ligand)
-    form.loadReceptor_btn.clicked.connect(runLongTask)
+    form.runDocking_btn.clicked.connect(runDockingJob)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)
