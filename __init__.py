@@ -18,7 +18,7 @@ from __future__ import absolute_import
 from __future__ import print_function
 import enum
 from subprocess import Popen, PIPE
-
+from chempy import cpv
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
@@ -156,11 +156,53 @@ class Box_s:
         def getDim(self)-> 'vec3':
             return self.dim
         
+        def point(self, p):
+            x, y, z = p
+            return [COLOR, 1, 1, 1, SPHERE, float(x), float(y), float(z), 0.5]
 
-        def __line(p1, p2):
+        def line(self, p1, p2):
             x1, y1, z1 = p1
             x2, y2, z2 = p2
             return [CYLINDER, float(x1), float(y1), float(z1), float(x2), float(y2), float(z2), 0.25, 1, 1, 1, 1, 1, 1]
+
+        def plane(self, corner1, corner2, corner3, corner4, normal):
+            planeObj = []
+            planeObj.extend(self.point(corner1))
+            planeObj.extend(self.point(corner2))
+            planeObj.extend(self.point(corner3))
+            planeObj.extend(self.point(corner4))
+            planeObj.extend(self.line(corner1, corner2))
+            planeObj.extend(self.line(corner2, corner3))
+            planeObj.extend(self.line(corner3, corner4))
+            planeObj.extend(self.line(corner4, corner1))
+
+            planeObj.extend([COLOR, 0.8, 0.8, 0.8])
+            planeObj.extend([BEGIN, TRIANGLE_STRIP])
+            planeObj.append(NORMAL)
+            planeObj.extend(normal)
+            for corner in [corner1, corner2, corner3, corner4, corner1]:
+                planeObj.append(VERTEX)
+                planeObj.extend(corner)
+            planeObj.append(END)
+            return planeObj
+        
+        def planeFromPoints(self, point1, point2, point3, facetSize):
+            v1 = cpv.normalize(cpv.sub(point2, point1))
+            v2 = cpv.normalize(cpv.sub(point3, point1))
+            normal = cpv.cross_product(v1, v2)
+            v2 = cpv.cross_product(normal, v1)
+            x = cpv.scale(v1, facetSize)
+            y = cpv.scale(v2, facetSize)
+            center = point2
+            corner1 = cpv.add(cpv.add(center, x), y)
+            corner2 = cpv.sub(cpv.add(center, x), y)
+            corner3 = cpv.sub(cpv.sub(center, x), y)
+            corner4 = cpv.add(cpv.sub(center, x), y)
+            return self.plane(corner1, corner2, corner3, corner4, normal)
+
+        def __fill(self):
+            p1 = self.planeFromPoints()
+            cmd.load_cgo(obj, 'box')
 
         def __showaxes(self, minX : float, minY : float, minZ : float) -> None:
             cmd.delete('axes')
@@ -236,7 +278,7 @@ class Box_s:
                 ]
 
             self.__showaxes(minX, minY, minZ)
-            cmd.delete('box')
+            #cmd.delete('box')
             cmd.load_cgo(box_cgo, 'box')
 
         def render(self) -> None:
@@ -696,7 +738,7 @@ def make_dialog():
     '''
     class VinaWorker(QtCore.QObject):
         finished = QtCore.pyqtSignal()
-        progress = QtCore.pyqtSignal(int)
+        progress = QtCore.pyqtSignal()
         vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
         
 
@@ -709,7 +751,7 @@ def make_dialog():
             args = sample_command.split()
 
             p = Popen(args, shell=False, stdout=PIPE, stderr=PIPE)
-            self.progress.emit('Working ...')
+            #self.progress.emit('Working ...')
 
             (out, err) = p.communicate()
             self.finished.emit()
