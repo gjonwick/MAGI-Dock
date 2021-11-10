@@ -18,12 +18,6 @@ from __future__ import absolute_import
 from __future__ import print_function
 import enum
 from subprocess import Popen, PIPE
-from chempy import cpv
-
-from OpenGL.GL import *
-from OpenGL.GLU import *
-from OpenGL.GLUT import *
-
 
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
 # executed on PyMOL's startup. Only import such modules inside functions.
@@ -278,7 +272,7 @@ class Box_s:
                 ]
 
             self.__showaxes(minX, minY, minZ)
-            #cmd.delete('box')
+            cmd.delete('box')
             cmd.load_cgo(box_cgo, 'box')
 
         def render(self) -> None:
@@ -306,15 +300,39 @@ class Box_s:
     XXX:form - XXX:not needed
 '''
 
+# TODO: observer pattern to notify observers when receptor changes
+
 class VinaCoupler:
 
     class __VinaCoupler:
 
         def __init__(self)-> None:
             self.receptor = None
+            self._recTest = None
             self.ligands = {}
+            self.ligands_to_dock = {}
             self.receptors = {}
             self.form = None
+            self._callbacks = []
+
+        @property
+        def recTest(self):
+            return self._recTest
+    
+        
+        # @recTest.setter
+        # def recTest(self, new_rec):
+        #     old_rec = self._recTest
+        #     self._recTest = new_rec
+        #     self._notify_observers(old_rec, new_rec)
+
+        # Callbacks act as Observers, because we will probably not use observer objects, but just methods, thus callbacks
+        def _notify_observers(self):
+            for callback in self._callbacks:
+                callback()
+            
+        def register_callback(self, callback):
+            self._callbacks.append(callback)
 
         def setForm(self, form):
             self.form = form
@@ -324,6 +342,7 @@ class VinaCoupler:
 
         def setReceptor(self, receptor):
             self.receptor = receptor
+            self._notify_observers()
 
         def setLigands(self, ligands):
             self.ligands = ligands
@@ -333,6 +352,20 @@ class VinaCoupler:
         
         def removeLigand(self, id):
             self.ligands.pop(id, None)
+
+        def addLigandToDock(self, ligand):
+            self.ligands_to_dock[ligand.name] = ligand
+        
+        def removeLigandToDock(self, id):
+            self.ligands_to_dock.pop(id, None)
+
+        def addReceptor(self, receptor):
+            self.receptors[receptor.name] = receptor
+            self.setReceptor(receptor)
+        
+        def removeReceptor(self, id):
+            self.receptors.pop(id, None)
+
         
         # def addReceptor(self, receptor : 'Receptor'):
         #     self.receptor[receptor.name] = receptor
@@ -381,6 +414,7 @@ class Receptor:
         self.pdbqt_location = None
         self.flexible_path = None
         self.flexible_residues = {}
+        self.fromPymol = True
 
     def flexibleResiduesAsString(self):
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
@@ -390,12 +424,13 @@ class Receptor:
                 pid = pid.split('_')[-1]
 
         chains = []
+        full_res_string = ''
         for chain, contents in self.flexible_residues.items():            
             ress = []
             chain_string = f'{pid}:{chain}:'
             for res in contents:
                 #full_res_name = pid + ':' + chain + ':' + '_'.join(ress)
-                res_string = f'{res.resi+str(res.resn)}'
+                res_string = f'{str(res.resn) + res.resi}'
                 ress.append(res_string)
             #TODO: review this, flex_receptor doesn't accept it
             full_res_string = '_'.join(ress)
@@ -406,7 +441,8 @@ class Receptor:
         final_str = ','.join(chains)
 
         logging.info(final_str)
-        return final_str
+        # NOTE: should return final_string
+        return full_res_string
 
 '''
     attributes:
@@ -436,8 +472,6 @@ class Ligand:
         
         # self.pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdbqt')
         pass
-
-
 
 class bAPI:
 
@@ -596,99 +630,6 @@ def run_plugin_gui():
 
     dialog.show()
 
-def make_dialog_2():
-    from pymol.Qt import QtWidgets
-    from pymol.Qt import QtOpenGL
-    from pymol.Qt.utils import loadUi
-    from pymol.Qt.utils import getSaveFileNameWithExt
-    import numpy as np
-
-    class Ui_MainWindow(QtWidgets.QWidget):
-        def __init__(self, parent=None):
-            super(Ui_MainWindow, self).__init__()
-            self.widget = glWidget()
-            self.button = QtWidgets.QPushButton('Test', self)
-            mainLayout = QtWidgets.QHBoxLayout()
-            mainLayout.addWidget(self.widget)
-            mainLayout.addWidget(self.button)
-            self.setLayout(mainLayout)
-
-
-    class glWidget(QtOpenGL.QGLWidget):
-        def __init__(self, parent=None):
-            QtOpenGL.QGLWidget.__init__(self, parent)
-            self.setMinimumSize(640, 480)
-            self.dx = 0
-            self.dy = 0
-
-        def initializeGL(self):
-            glEnable(GL_DEPTH_TEST)
-            glEnable(GL_LIGHT0)
-            glEnable(GL_LIGHTING)
-            glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE)
-            glEnable(GL_COLOR_MATERIAL)
-
-        def paintGL(self):
-            
-            glMatrixMode(GL_PROJECTION)
-
-            glClearColor(0.0, 0.0, 0.0, 1.0)
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-            glColor3f(0.0, 0.0, 1.0)
-            
-            
-
-            self.__drawCircleCursor(0.05, 0, 0)
-
-            # Drawing lines
-            glBegin(GL_LINES)
-
-            glVertex3f(-1.0, 0.0, 0.0)
-            glVertex3f(1.0, 0.0, 0.0)
-
-            glVertex3f(0.0, 1.0, 0.0)
-            glVertex3f(0.0, -1.0, 0.0)
-
-            glEnd()
-
-        
-        def resizeGL(self, w, h):
-            glViewport(0, 0, w, h)
-
-        def __drawCircleCursor(self, r, x, y, sides = 32):
-            glColor3f(0.5, 0.5, 1.0)
-            glBegin(GL_POLYGON)
-            for vertex in range(0, sides):
-                angle = float(vertex) * 2.0 * np.pi / sides
-                glVertex3f(np.cos(angle)*r, np.sin(angle)*r, 0.0)
-            
-            glEnd()
-
-        def mousePressEvent(self, event):
-            self.lastPos = event.pos()
-        
-        def mouseMoveEvent(self, event):
-            dx = event.x() - self.lastPos.x()
-            dy = event.y() - self.lastPos.y()
-
-            self.setDeltaX(dx)
-            self.setDeltaY(dy)
-
-            self.lastPos = event.pos()
-
-        def setDeltaX(self, val):
-            self.dx = val
-            glTranslatef(val, 0.0, 0.0)
-            
-        def setDeltaY(self, val):
-            self.dy = val
-            glTranslatef(0.0, val, 0.0)
-    
-    Form = QtWidgets.QMainWindow()
-    dialog = Ui_MainWindow(Form)    
-    
-    return dialog
-
 def make_dialog():
     
     # entry point to PyMOL's API
@@ -739,21 +680,37 @@ def make_dialog():
     class VinaWorker(QtCore.QObject):
         finished = QtCore.pyqtSignal()
         progress = QtCore.pyqtSignal()
-        vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
-        
 
         def run(self):
-            sample_command = 'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
+            vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
+            receptor = vinaInstance.receptor
+            #ligands_to_dock = vinaInstance.ligands_to_dock
+
+            # ligands_to_dock = ['str']
+            # ligand = vinaInstance.ligands['str']
+            # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
+            # suffix = receptor.pdbqt_location.split('/')[-1]
+            # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
+
+
+
+            sample_command = f'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
                                    --flex TESTING_RECEPTOR_1mrq_flex.pdbqt --ligand TESTING_LIGAND_str.pdbqt \
                                    --config config.txt \
                                    --exhaustiveness 32 --out TESTING_RECEPTOR_1mrq_flex_vina_out.pdbqt'
 
             args = sample_command.split()
 
-            p = Popen(args, shell=False, stdout=PIPE, stderr=PIPE)
-            #self.progress.emit('Working ...')
+            p = Popen(args, shell=False)
+            self.progress.emit()
+            # for stdout_line in p.stdout.readlines():
+            #     self.progress.emit(stdout_line)
+            #     sys.stdout.flush()
+                # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
+            #p.stdout.close()
 
             (out, err) = p.communicate()
+
             self.finished.emit()
         
        
@@ -766,23 +723,34 @@ def make_dialog():
     # create a new Window
     dialog = QtWidgets.QDialog()
     saveTo = ''
-    AUTODOCK_PATH = '/home/jurgen/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24'
+    #AUTODOCK_PATH = '/home/jurgen/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24'
 
     # populate the Window from our *.ui file which was created with the Qt Designer
     uifile = os.path.join(os.path.dirname(__file__), 'demowidget.ui')
     form = loadUi(uifile, dialog)
     
     vinaInstance.setForm(form)
-    
+
     logger = CustomLogger(form.plainTextEdit)
     logger.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logging.getLogger().addHandler(logger)
     logging.getLogger().setLevel(logging.INFO)
 
+    def printRecChange():
+        print(f'New receptor is{vinaInstance.receptor.name}!')
+
+    def updateReceptorLists():
+        form.loadedReceptor_txt.setText(vinaInstance.receptor.name)
+        update_flexible_list()
+
+    
+    vinaInstance.register_callback(printRecChange)
+    vinaInstance.register_callback(updateReceptorLists)
+
     def logToWidget(m):
         logging.info(m)
 
-    def runLongTask():
+    def runDockingJob():
         form.thread = QtCore.QThread()
         form.worker = VinaWorker()
         form.worker.moveToThread(form.thread)
@@ -790,18 +758,20 @@ def make_dialog():
         form.worker.finished.connect(form.thread.quit)
         form.worker.finished.connect(form.worker.deleteLater)
         form.thread.finished.connect(form.thread.deleteLater)
-        form.worker.progress.connect(logToWidget)
+        form.worker.progress.connect(lambda : logging.info('Working ... '))
 
         # start thread
         form.thread.start()
 
         # final resets
-        form.loadReceptor_btn.setEnabled(False)
+        form.runDocking_btn.setEnabled(False)
         form.thread.finished.connect(
-            lambda: form.loadReceptor_btn.setEnabled(True)
+            lambda: form.runDocking_btn.setEnabled(True)
         )
 
-        form.thread.finished.connect(logMessage)
+        form.thread.finished.connect(
+            lambda : logging.info('Finish!')
+        )
 
     
     def updateCenterGUI(x, y, z):
@@ -887,7 +857,13 @@ def make_dialog():
         if filename != ('', ''):
             form.ligandPath_txt.setText(filename[0])
 
-           
+    def browse_receptors():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            dialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.receptorPath_txt.setText(filename[0])
 
     def show_hide_Box():
         if form.showBox_ch.isChecked():
@@ -963,6 +939,15 @@ def make_dialog():
         vinaInstance.addLigand(ligand)
 
         update_ligands_list()
+
+    def load_receptor():
+        receptor_pdb_path = form.receptorPath_txt.text().strip()
+        receptor_name = receptor_pdb_path.split('/')[-1].split('.')[0]
+
+        receptor = Receptor()
+        receptor.name = receptor_name
+        receptor.fromPymol = False
+        vinaInstance.addReceptor(receptor)
         
     def remove_ligand():
         selection = form.ligands_lstw.selectedItems()
@@ -970,6 +955,12 @@ def make_dialog():
             vinaInstance.removeLigand(item.text())
 
         update_ligands_list()
+
+
+    def update_receptor_list():
+        form.receptor_lstw.clear()
+        receptor_names = [rec_id for rec_id in vinaInstance.receptors.keys()]
+        form.receptor_lstw.addItems(receptor_names)
 
     # async
     '''
@@ -982,41 +973,42 @@ def make_dialog():
             print('You can only have 1 receptor!')
             logging.error('You can only have 1 receptor!')
             return
-        
+
+        #update_flexible_list()
+
         rec = Receptor()
-        vinaInstance.setReceptor(rec)
         receptor = selection[0].text()
-        vinaInstance.receptor.name = receptor
-        
+        rec.name = receptor
+        vinaInstance.addReceptor(rec)
+
         WORK_DIR = os.getcwd() # TODO: temporary
         prepare_receptor = 'prepare_receptor'
         receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
         outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdbqt')
         
-        try:
-            cmd.save(receptor_path, receptor)
-        except cmd.QuietException:
-            pass
+        # try:
+        #     cmd.save(receptor_path, receptor)
+        # except cmd.QuietException:
+        #     pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens' 
         logging.info(command)
 
-        result, output = getStatusOutput(command)
-        
+        #result, output = getStatusOutput(command)
+        result = 0
         logging.info('Generating receptor ...')
-        print(output)
+        #print(output)
 
         if result == 0:
             vinaInstance.receptor.pdbqt_location = outputfile
             # NOTE: right now only 1 receptor is supported
-            form.receptor_lstw.clear()
-            form.receptor_lstw.addItem(receptor)
+            update_receptor_list()
             logging.info(f'Success!')
             logging.info(f'Receptor pdbqt location = {vinaInstance.receptor.pdbqt_location}')
 
         else:
             logging.error(f'Receptor {receptor} pdbqt file could not be generated!')
-            logging.error(output)
+            #logging.error(output)
     
     # async
     def generate_flexible():
@@ -1058,16 +1050,16 @@ def make_dialog():
         command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}' 
         logging.info(command)
 
-        result, output = getStatusOutput(command)
-
-        print(output)
-        logging.debug(output)
+        #result, output = getStatusOutput(command)
+        result = 0
+        #print(output)
 
         if result == 0:
-
-            for chain, contents in chains.items():
-                for res in contents:
-                    form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
+            
+            #logging.debug(f'{output}')        
+            # for chain, contents in chains.items():
+            #     for res in contents:
+            #         form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
                 
             logging.info(f'Success generating flexible receptor with flexible residues {res_string}')
         else:
@@ -1095,7 +1087,8 @@ def make_dialog():
 
         prep_command = 'prepare_ligand'
 
-        for index, ligand_name in enumerate(ligand_selection):
+        for index, ligand_selection in enumerate(ligand_selection):
+            ligand_name = ligand_selection.text()
             ligand = vinaInstance.ligands[ligand_name]
             if ligand.fromPymol:
                 ligand_pdb = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdb')
@@ -1104,17 +1097,46 @@ def make_dialog():
                     cmd.save(ligand_pdb, ligand_name)
                 except cmd.QuietException:
                     pass
-            else:
-                ligand_pdb = ligand.pdb
+            # else:
+            #     ligand_pdb = ligand.pdb
             
             ligand_pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdbqt')
-            
+            ligand.pdbqt = ligand_pdbqt
+
             command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt}'
 
-            # result, output = getStatusOutput(command)
+            result, output = getStatusOutput(command)
 
-            # if result != 0:
-            #     print(f'Ligand {ligand.name} failed!')
+            if result == 0:
+                logging.debug(output)
+
+                #ligand.pdbqt = ligand_pdbqt
+                form.preparedLigands_lstw.addItem(ligand.name)
+                logging.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
+            else:
+                logging.info(f'An error occurred while trying to prepare the ligand ...')
+                logging.info(output)
+    
+    def onCloseWindow():
+        cmd.delete('box')
+        cmd.delete('axes')
+        dialog.close()
+
+    def onSelectReceptor(item):
+        logging.info(f'Receptor {item.text()} selected')
+        #vinaInstance.receptor = vinaInstance.receptors[item.text()]
+        vinaInstance.setReceptor(vinaInstance.receptors[item.text()])
+        #vinaInstance.setRecTest(vinaInstance.receptors[item.text()])
+        #update_flexible_list() # TODO: refactor, on receptor_change (done)
+
+    def update_flexible_list():
+        form.flexRes_lstw.clear()
+        flexibles = vinaInstance.receptor.flexible_residues
+        if len(flexibles) != 0:
+            for chain, contents in flexibles.items():
+                for res in contents:
+                    form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
+
 
     ########################## </Callbacks> #############################
 
@@ -1133,7 +1155,9 @@ def make_dialog():
     form.saveAs_btn.clicked.connect(saveAs_config)
     form.browse_btn.clicked.connect(browse)
     form.browseLigand_btn.clicked.connect(browse_ligands)
+    form.browseReceptor_btn.clicked.connect(browse_receptors)
     form.genBox_btn.clicked.connect(gen_box)
+    form.receptor_lstw.itemClicked.connect(onSelectReceptor)
 
     form.genReceptor_btn.clicked.connect(generate_receptor)
     form.genFlexible_btn.clicked.connect(generate_flexible)
@@ -1144,11 +1168,12 @@ def make_dialog():
     form.removeLigand_btn.clicked.connect(remove_ligand)
     form.addLigand_btn.clicked.connect(add_ligand)
     form.loadLigand_btn.clicked.connect(load_ligand)
-    form.loadReceptor_btn.clicked.connect(runLongTask)
+    form.loadReceptor_btn.clicked.connect(load_receptor)
+    form.runDocking_btn.clicked.connect(runDockingJob)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)
-    form.close_btn.clicked.connect(dialog.close)
+    form.close_btn.clicked.connect(onCloseWindow)
 
     return dialog
 
