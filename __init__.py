@@ -17,6 +17,7 @@ the additional features of PyQt5.
 from __future__ import absolute_import
 from __future__ import print_function
 import enum
+import math
 from subprocess import Popen, PIPE
 
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
@@ -31,8 +32,20 @@ from pymol.vfont import plain
 from pymol.viewing import center, show  
 from pymol import stored
 
+
+class dotdict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 MODULE_UNLOADED = False
 WORK_DIR = os.getcwd()
+
+CONFIG = dotdict({
+    'vina_path' : None,
+    'autodock_path': None,
+    'box_path': None
+})
 
 # TODO: move this functions to utils
 
@@ -68,7 +81,9 @@ class CustomLogger(logging.Handler):
 
 class vec3:
 
-    def __init__(self, x, y, z) -> None:
+    RSMALL4 = 0.0001
+
+    def __init__(self, x: float, y: float, z: float) -> None:
         self.x = x
         self.y = y
         self.z = z
@@ -88,6 +103,12 @@ class vec3:
     def cross(self, v: 'vec3') -> 'vec3':
         return vec3(self.y * v.z - self.z * v.y, self.z * v.x - self.x * v.z, self.x * v.y - self.y * v.x)
     
+    def normalize(self) -> 'vec3':
+        return vec3(self.x / self.length(), self.y / self.length(), self.z / self.length())
+    
+    def length(self) -> float:
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+
     def __truediv__(self, c) -> 'vec3':
         return vec3(self.x / c, self.y / c, self.z / c)
 
@@ -100,11 +121,141 @@ class vec3:
     def unpack(self):
         return self.x, self.y, self.z
 
-class dotdict(dict):
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
 
+'''
+Experimental -
+    classes to help modify the presentation of the box
+'''
+
+# class CGOWrapper:
+
+#     def __init__(self) -> None:
+#         pass
+
+
+# class CGOOBject:
+    
+#     def make():
+#         pass
+
+# '''
+# TODO: Also, think about it in the same way as the Pipeline
+# '''
+
+# class CGODecorator(CGOOBject):
+
+#     def __init__(self, customCgoObj) -> None:
+#         self.customCgoObj = customCgoObj
+    
+#     def make(self):
+#         return self.customCgoObj.make()
+    
+
+# class LineDecorator(CGODecorator):
+
+#     def __init__(self, customCgoObj) -> None:
+#         super.__init__(customCgoObj)
+
+#     def make(self):
+#         return self.customCgoObj.make().extend(self.addLine())
+    
+#     def addLine(self):
+#         return []
+    
+# class PlaneDecorator(CGODecorator):
+
+#     def __init__(self, customCgoObj) -> None:
+#         super().__init__(customCgoObj)
+    
+#     def make(self):
+#         return self.customCgoObj.make().extend(self.addPlane())
+    
+#     def addPlane(self):
+#         return []
+
+
+# '''
+# Plane is not a native CGO object - TODO: a way to treat it as a CGO object is needed: you can do that - aggregation of CGOs
+# '''
+# class CGOPlane(CGOWrapper):
+
+#     def __init__(self, center: 'vec3', dim: 'vec3') -> None:
+#         super().__init__()
+#         self.center = center
+#         self.dim = dim
+    
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         corner1 = kwds['corner1']
+#         corner2 = kwds['corner2']
+#         corner3 = kwds['corner3']
+#         corner4 = kwds['corner4']
+
+#         planeObj = []
+#         # planeObj.extend(self.point(corner1))
+#         # planeObj.extend(self.point(corner2))
+#         # planeObj.extend(self.point(corner3))
+#         # planeObj.extend(self.point(corner4))
+#         planeObj.extend(self.line(corner1, corner2))
+#         planeObj.extend(self.line(corner2, corner3))
+#         planeObj.extend(self.line(corner3, corner4))
+#         planeObj.extend(self.line(corner4, corner1))
+
+#         planeObj.extend([COLOR, 0.8, 0.8, 0.8])
+#         planeObj.extend([BEGIN, TRIANGLE_STRIP])
+#         planeObj.append(NORMAL)
+#         planeObj.extend([normal.unpack()])
+
+#         for corner in [corner1, corner2, corner3, corner4, corner1]:
+#             planeObj.append(VERTEX)
+#             planeObj.extend(corner)
+#         planeObj.append(END)
+
+#         return planeObj
+
+# class CGOBox(CGOWrapper):
+
+#     def __init__(self, center: 'vec3', dim: 'vec3') -> None:
+#         super().__init__()
+#         self.center = center
+#         self.dim = dim
+
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         plane1 = CGOPlane()
+
+
+# class CGOLine(CGOWrapper):
+
+#     def __init__(self, p1:'vec3', p2:'vec3') -> None:
+#         super().__init__()
+#         self.p1 = p1
+#         self.p2 = p2
+
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         p1 = kwds['p1']
+#         p2 = kwds['p2']
+#         x1, y1, z1 = p1.unpack()
+#         x2, y2, z2 = p2.unpack()
+#         return [
+#                 CYLINDER, 
+#                         float(x1), float(y1), float(z1), 
+#                         float(x2), float(y2), float(z2), 
+#                         0.25, 1, 1, 1, 1, 1, 1
+#                 ]
+
+# class CGOPoint(CGOWrapper):
+
+#     def __init__(self) -> None:
+#         super().__init__()
+    
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         p = args[0]
+#         x, y, z = p.unpack()
+#         return [
+#                 COLOR, 1, 1, 1, 
+#                 SPHERE, 
+#                     float(x), float(y), float(z), 
+#                     0.5
+#                 ]
 
 # NOTE: Rendering includes communication with pymol (cmd, etc.). May be decoupled from the Box class
 # because it is better to let the plugin handle the rendering and the communication with PyMol
@@ -150,21 +301,26 @@ class Box_s:
         def getDim(self)-> 'vec3':
             return self.dim
         
-        def point(self, p):
-            x, y, z = p
-            return [COLOR, 1, 1, 1, SPHERE, float(x), float(y), float(z), 0.5]
+        def point(self, p: 'vec3'):
+            x, y, z = p.unpack()
+            return [
+                    COLOR, 1, 1, 1, 
+                    SPHERE, float(x), float(y), float(z), 0.5
+                   ]
 
-        def line(self, p1, p2):
-            x1, y1, z1 = p1
-            x2, y2, z2 = p2
-            return [CYLINDER, float(x1), float(y1), float(z1), float(x2), float(y2), float(z2), 0.25, 1, 1, 1, 1, 1, 1]
+        def line(self, p1: 'vec3', p2: 'vec3'):
+            x1, y1, z1 = p1.unpack()
+            x2, y2, z2 = p2.unpack()
+            return [
+                    CYLINDER, 
+                            float(x1), float(y1), float(z1), 
+                            float(x2), float(y2), float(z2), 
+                            0.25, 1, 1, 1, 1, 1, 1
+                    ]
 
-        def plane(self, corner1, corner2, corner3, corner4, normal):
+        def plane(self, corner1: 'vec3', corner2: 'vec3', corner3: 'vec3', corner4: 'vec3', normal: 'vec3'):
             planeObj = []
-            planeObj.extend(self.point(corner1))
-            planeObj.extend(self.point(corner2))
-            planeObj.extend(self.point(corner3))
-            planeObj.extend(self.point(corner4))
+   
             planeObj.extend(self.line(corner1, corner2))
             planeObj.extend(self.line(corner2, corner3))
             planeObj.extend(self.line(corner3, corner4))
@@ -173,30 +329,153 @@ class Box_s:
             planeObj.extend([COLOR, 0.8, 0.8, 0.8])
             planeObj.extend([BEGIN, TRIANGLE_STRIP])
             planeObj.append(NORMAL)
-            planeObj.extend(normal)
+            planeObj.extend([normal.unpack()])
+
             for corner in [corner1, corner2, corner3, corner4, corner1]:
                 planeObj.append(VERTEX)
-                planeObj.extend(corner)
+                planeObj.extend([corner.unpack()])
             planeObj.append(END)
+
             return planeObj
         
         def planeFromPoints(self, point1, point2, point3, facetSize):
-            v1 = cpv.normalize(cpv.sub(point2, point1))
-            v2 = cpv.normalize(cpv.sub(point3, point1))
-            normal = cpv.cross_product(v1, v2)
-            v2 = cpv.cross_product(normal, v1)
-            x = cpv.scale(v1, facetSize)
-            y = cpv.scale(v2, facetSize)
+            v1 = point2 - point1
+            v1 = v1.normalize()
+
+            v2 = point3 - point1
+            v2 = v2.normalize()
+
+            normal = v1.cross(v2)
+
+            v2 = normal.cross(v1)
+
+            x = v1 * facetSize
+            y = v2 * facetSize
+
             center = point2
-            corner1 = cpv.add(cpv.add(center, x), y)
-            corner2 = cpv.sub(cpv.add(center, x), y)
-            corner3 = cpv.sub(cpv.sub(center, x), y)
-            corner4 = cpv.add(cpv.sub(center, x), y)
+            
+            corner1 = center + x + y
+            corner2 = center + x - y
+            corner3 = center - x - y
+            corner4 = center - x + y
+            
             return self.plane(corner1, corner2, corner3, corner4, normal)
 
-        def __fill(self):
-            p1 = self.planeFromPoints()
-            cmd.load_cgo(obj, 'box')
+        def test_fill(self, settings = {}):
+            # c1 = self.center - self.dim / 2
+            # c2 = c1 + vec3(self.dim.x, 0, 0)
+            # c3 = c2 + vec3(0, 0, self.dim.z)
+            # c4 = c3 + vec3(-self.dim.x, 0, 0)
+            # normal = (c2 - c1).cross((c4 - c1))
+            # normal = normal.normalize()
+
+            center = self.center
+            dim = self.dim
+            
+            # get extremes
+            (minX, minY, minZ) = (center - dim / 2).unpack()
+            (maxX, maxY, maxZ) = (center + dim / 2).unpack()
+
+            c1 = vec3(minX, minY, minZ)
+            c2 = vec3(minX, minY, maxZ)
+            c3 = vec3(minX, maxY, minZ)
+            c4 = vec3(minX, maxY, maxZ)
+
+            c5 = vec3(maxX, minY, minZ)
+            c6 = vec3(maxX, minY, maxZ)
+            c7 = vec3(maxX, maxY, minZ)
+            c8 = vec3(maxX, maxY, maxZ)
+
+
+            normal1 = (c1.normalize() - c2.normalize()).cross(c1.normalize() - c3.normalize())
+            normal2 = (c5.normalize() - c6.normalize()).cross(c5.normalize() - c7.normalize())
+
+            normal3 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c3.normalize())
+            normal4 = (c2.normalize() - c6.normalize()).cross(c2.normalize() - c4.normalize())
+
+            normal5 = (c3.normalize() - c7.normalize()).cross(c3.normalize() - c4.normalize())
+            normal6 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c2.normalize())
+
+            alpha = 0.8
+
+            box_cgo = [
+                        LINEWIDTH, float(2.0),
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal1.x, normal1.y, normal1.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(0.55), float(0.25), float(0.60),
+
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, minX, maxY, maxZ,       #4
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal2.x, normal2.y, normal2.z,
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(1.0), float(0.0),
+                        
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, maxX, minY, maxZ,       #6
+                        VERTEX, maxX, maxY, minZ,       #7
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal3.x, normal3.y, normal3.z,
+                        ALPHA, float(alpha), 
+                        COLOR, float(0.0), float(0.0), float(1.0),
+
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, maxX, maxY, minZ,       #7
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal4.x, normal4.y, normal4.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(0.5), float(0.0),
+
+                        VERTEX, minX, maxY, maxZ,       #4
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, maxX, minY, maxZ,       #6
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal5.x, normal5.y, normal5.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(0.2), float(0.6), float(0.2),
+
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, maxX, maxY, minZ,       #7
+                        VERTEX, minX, maxY, maxZ,       #4
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal6.x, normal6.y, normal6.z,
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(0.0), float(0.0),
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, maxX, minY, maxZ,       #6
+
+                        END
+                ]
+
+            #self.__showaxes(minX, minY, minZ)
+          
+            cmd.delete('box')
+            cmd.load_cgo(box_cgo, 'box')
+
+
+            # p1 = self.plane(c1, c2, c3, c4, normal)
+            # cmd.load_cgo(p1, 'test_fill')
 
         def __showaxes(self, minX : float, minY : float, minZ : float) -> None:
             cmd.delete('axes')
@@ -221,6 +500,8 @@ class Box_s:
         def __refresh(self) -> None:
             center = self.center
             dim = self.dim
+            
+            # get extremes
             (minX, minY, minZ) = (center - dim / 2).unpack()
             (maxX, maxY, maxZ) = (center + dim / 2).unpack()
 
@@ -314,11 +595,12 @@ class VinaCoupler:
             self.receptors = {}
             self.form = None
             self._callbacks = []
+            self._ligand_callbacks = []
+            self.config = {}
 
         @property
         def recTest(self):
             return self._recTest
-    
         
         # @recTest.setter
         # def recTest(self, new_rec):
@@ -330,9 +612,19 @@ class VinaCoupler:
         def _notify_observers(self):
             for callback in self._callbacks:
                 callback()
+        
+        def _notify_ligand_observers(self):
+            for callback in self._ligand_callbacks:
+                callback()
             
         def register_callback(self, callback):
             self._callbacks.append(callback)
+        
+        def register_ligand_callback(self, callback):
+            self._ligand_callbacks.append(callback)
+
+        def register_general_calblack(self, l, callback):
+            l.append(callback)
 
         def setForm(self, form):
             self.form = form
@@ -349,6 +641,7 @@ class VinaCoupler:
         
         def addLigand(self, ligand):
             self.ligands[ligand.name] = ligand
+            self._notify_ligand_observers()
         
         def removeLigand(self, id):
             self.ligands.pop(id, None)
@@ -415,6 +708,8 @@ class Receptor:
         self.flexible_path = None
         self.flexible_residues = {}
         self.fromPymol = True
+        self.rigid_pdbqt = None
+        self.flex_pdbqt = None
 
     def flexibleResiduesAsString(self):
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
@@ -450,6 +745,7 @@ class Receptor:
         pdb - the path to the pdb (or .gro, .mol2, etc.) file, if any
         pdbqt - the path to the generated pdbqt file, if any
         fromPymol - flag that tracks if the ligand is loaded from the user's local system, or from pymol
+        isPrepared - flag that tracks if the ligand is prepared or not (if prepared, it's ready to use in docking)
 '''
 class Ligand:
 
@@ -458,9 +754,9 @@ class Ligand:
         self.pdb = pdb
         self.pdbqt = ''
         self.fromPymol = True
+        self.isPrepared = False
 
     def prepare(self):
-
         # if self.fromPymol:
         #     self.pdb  = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdb')
         #     try:
@@ -471,12 +767,15 @@ class Ligand:
         #     pass
         
         # self.pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdbqt')
-        pass
+        self.isPrepared = True
 
 class bAPI:
 
     def __init__(self) -> None:
         self.gBox = Box_s()
+
+    def fill(self):
+        self.gBox.test_fill()
 
     def extend(self, x, y, z):
         self.gBox.extend(vec3(x, y, z))
@@ -686,12 +985,13 @@ def make_dialog():
             receptor = vinaInstance.receptor
             #ligands_to_dock = vinaInstance.ligands_to_dock
 
-            # ligands_to_dock = ['str']
+            # ligands_to_dock = ['str'] # NOTE: vina probably supports batch docking with multiple ligands
             # ligand = vinaInstance.ligands['str']
             # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
             # suffix = receptor.pdbqt_location.split('/')[-1]
             # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
 
+            box_path = CONFIG.box_path
 
 
             sample_command = f'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
@@ -713,7 +1013,17 @@ def make_dialog():
 
             self.finished.emit()
         
-       
+        # TODO: no need to find rigid here, store it in the receptor
+        def process_args(self, receptor, ligands):
+            receptor_pdbqt = receptor.pdbqt_location
+            receptor_core = receptor_pdbqt.split('.')[0].split('/')[-1]
+            
+            rigid = f'{WORK_DIR}/{receptor_core}_rigid.pdbqt'
+            flex = f'{WORK_DIR}/{receptor_core}_flex.pdbqt'
+            ligands = [ligand.pdbqt for ligand in ligands]
+
+
+
 
 
     #import boxAPI
@@ -742,10 +1052,19 @@ def make_dialog():
     def updateReceptorLists():
         form.loadedReceptor_txt.setText(vinaInstance.receptor.name)
         update_flexible_list()
-
+    
+    def update_ligands_list():
+        form.ligands_lstw.clear()
+        ligand_names = [lig_id for lig_id in vinaInstance.ligands.keys()]
+        prepared_ligands_names = [lig_id for lig_id in vinaInstance.ligands.keys() if vinaInstance.ligands[lig_id].isPrepared]
+        form.ligands_lstw.addItems(ligand_names)
+        form.preparedLigands_lstw.addItems(prepared_ligands_names)
+        form.preparedLigands_lstw_2.addItems(prepared_ligands_names)
+    
     
     vinaInstance.register_callback(printRecChange)
     vinaInstance.register_callback(updateReceptorLists)
+    vinaInstance.register_ligand_callback(update_ligands_list)
 
     def logToWidget(m):
         logging.info(m)
@@ -914,10 +1233,6 @@ def make_dialog():
         logging.info('Selections imported!')
 
     # ligand handler methods
-    def update_ligands_list():
-        form.ligands_lstw.clear()
-        ligand_names = [lig_id for lig_id in vinaInstance.ligands.keys()]
-        form.ligands_lstw.addItems(ligand_names)
     
     def add_ligand():
         selection = form.sele_lstw_2.selectedItems()
@@ -976,10 +1291,9 @@ def make_dialog():
 
         #update_flexible_list()
 
-        rec = Receptor()
+        
         receptor = selection[0].text()
-        rec.name = receptor
-        vinaInstance.addReceptor(rec)
+        
 
         WORK_DIR = os.getcwd() # TODO: temporary
         prepare_receptor = 'prepare_receptor'
@@ -1000,8 +1314,11 @@ def make_dialog():
         #print(output)
 
         if result == 0:
+            rec = Receptor()
+            rec.name = receptor
+            vinaInstance.addReceptor(rec) # TODO: move after result (done)
             vinaInstance.receptor.pdbqt_location = outputfile
-            # NOTE: right now only 1 receptor is supported
+            # NOTE: right now only 1 receptor is supported (fixed)
             update_receptor_list()
             logging.info(f'Success!')
             logging.info(f'Receptor pdbqt location = {vinaInstance.receptor.pdbqt_location}')
@@ -1036,6 +1353,7 @@ def make_dialog():
 
         if vinaInstance.receptor != None:
             vinaInstance.receptor.flexible_residues = chains
+            update_flexible_list() #TODO: move this from here, create a listener for receptor flexible onChange
 
         res_string = vinaInstance.receptor.flexibleResiduesAsString()
         logging.info(res_string)
@@ -1105,17 +1423,23 @@ def make_dialog():
 
             command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt}'
 
-            result, output = getStatusOutput(command)
+            #result, output = getStatusOutput(command)
+            result = 0
 
             if result == 0:
-                logging.debug(output)
-
+                #logging.debug(output)
+                ligand.prepare()
                 #ligand.pdbqt = ligand_pdbqt
+                update_ligands_list()
+                '''
                 form.preparedLigands_lstw.addItem(ligand.name)
+                form.preparedLigands_lstw_2.addItem(ligand.name)
+                '''
+
                 logging.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
             else:
                 logging.info(f'An error occurred while trying to prepare the ligand ...')
-                logging.info(output)
+                #logging.info(output)
     
     def onCloseWindow():
         cmd.delete('box')
@@ -1137,6 +1461,11 @@ def make_dialog():
                 for res in contents:
                     form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
 
+
+
+
+    def fill_test():
+        boxAPI.fill()
 
     ########################## </Callbacks> #############################
 
@@ -1174,6 +1503,8 @@ def make_dialog():
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.importSele_btn.clicked.connect(import_sele)
     form.close_btn.clicked.connect(onCloseWindow)
+
+    form.testFill_btn.clicked.connect(fill_test)
 
     return dialog
 

@@ -421,7 +421,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="receptor_tab">
     <attribute name="title">
@@ -1011,6 +1011,19 @@
    </property>
    <property name="text">
     <string>Fill</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="testFill_btn">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>500</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Test Fill</string>
    </property>
   </widget>
  </widget>
