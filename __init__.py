@@ -361,128 +361,12 @@ class Box_s:
             
             return self.plane(corner1, corner2, corner3, corner4, normal)
 
-        def test_fill(self, settings = {}):
-            # c1 = self.center - self.dim / 2
-            # c2 = c1 + vec3(self.dim.x, 0, 0)
-            # c3 = c2 + vec3(0, 0, self.dim.z)
-            # c4 = c3 + vec3(-self.dim.x, 0, 0)
-            # normal = (c2 - c1).cross((c4 - c1))
-            # normal = normal.normalize()
-
-            center = self.center
-            dim = self.dim
-            
-            # get extremes
-            (minX, minY, minZ) = (center - dim / 2).unpack()
-            (maxX, maxY, maxZ) = (center + dim / 2).unpack()
-
-            c1 = vec3(minX, minY, minZ)
-            c2 = vec3(minX, minY, maxZ)
-            c3 = vec3(minX, maxY, minZ)
-            c4 = vec3(minX, maxY, maxZ)
-
-            c5 = vec3(maxX, minY, minZ)
-            c6 = vec3(maxX, minY, maxZ)
-            c7 = vec3(maxX, maxY, minZ)
-            c8 = vec3(maxX, maxY, maxZ)
-
-
-            normal1 = (c1.normalize() - c2.normalize()).cross(c1.normalize() - c3.normalize())
-            normal2 = (c5.normalize() - c6.normalize()).cross(c5.normalize() - c7.normalize())
-
-            normal3 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c3.normalize())
-            normal4 = (c2.normalize() - c6.normalize()).cross(c2.normalize() - c4.normalize())
-
-            normal5 = (c3.normalize() - c7.normalize()).cross(c3.normalize() - c4.normalize())
-            normal6 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c2.normalize())
-
-            alpha = 0.8
-
-            box_cgo = [
-                        LINEWIDTH, float(2.0),
-
-                        BEGIN, TRIANGLE_STRIP,
-                        NORMAL, normal1.x, normal1.y, normal1.z, 
-                        ALPHA, float(alpha),
-                        COLOR, float(0.55), float(0.25), float(0.60),
-
-                        VERTEX, minX, minY, minZ,       #1
-                        VERTEX, minX, minY, maxZ,       #2
-                        VERTEX, minX, maxY, minZ,       #3
-                        VERTEX, minX, maxY, maxZ,       #4
-                        END,
-
-                        BEGIN, TRIANGLE_STRIP,
-                        NORMAL, normal2.x, normal2.y, normal2.z,
-                        ALPHA, float(alpha),
-                        COLOR, float(1.0), float(1.0), float(0.0),
-                        
-                        VERTEX, maxX, minY, minZ,       #5
-                        VERTEX, maxX, minY, maxZ,       #6
-                        VERTEX, maxX, maxY, minZ,       #7
-                        VERTEX, maxX, maxY, maxZ,       #8
-                        END,
-
-                        BEGIN, TRIANGLE_STRIP,
-                        NORMAL, normal3.x, normal3.y, normal3.z,
-                        ALPHA, float(alpha), 
-                        COLOR, float(0.0), float(0.0), float(1.0),
-
-                        VERTEX, minX, minY, minZ,       #1
-                        VERTEX, maxX, minY, minZ,       #5
-                        VERTEX, minX, maxY, minZ,       #3
-                        VERTEX, maxX, maxY, minZ,       #7
-                        END,
-
-                        BEGIN, TRIANGLE_STRIP,
-                        NORMAL, normal4.x, normal4.y, normal4.z, 
-                        ALPHA, float(alpha),
-                        COLOR, float(1.0), float(0.5), float(0.0),
-
-                        VERTEX, minX, maxY, maxZ,       #4
-                        VERTEX, maxX, maxY, maxZ,       #8
-                        VERTEX, minX, minY, maxZ,       #2
-                        VERTEX, maxX, minY, maxZ,       #6
-                        END,
-
-                        BEGIN, TRIANGLE_STRIP,
-                        NORMAL, normal5.x, normal5.y, normal5.z, 
-                        ALPHA, float(alpha),
-                        COLOR, float(0.2), float(0.6), float(0.2),
-
-                        VERTEX, minX, maxY, minZ,       #3
-                        VERTEX, maxX, maxY, minZ,       #7
-                        VERTEX, minX, maxY, maxZ,       #4
-                        VERTEX, maxX, maxY, maxZ,       #8
-                        END,
-
-                        BEGIN, TRIANGLE_STRIP,
-                        NORMAL, normal6.x, normal6.y, normal6.z,
-                        ALPHA, float(alpha),
-                        COLOR, float(1.0), float(0.0), float(0.0),
-                        VERTEX, minX, minY, minZ,       #1
-                        VERTEX, maxX, minY, minZ,       #5
-                        VERTEX, minX, minY, maxZ,       #2
-                        VERTEX, maxX, minY, maxZ,       #6
-
-                        END
-                ]
-
-            #self.__showaxes(minX, minY, minZ)
-          
-            cmd.delete('box')
-            cmd.load_cgo(box_cgo, 'box')
-
-
-            # p1 = self.plane(c1, c2, c3, c4, normal)
-            # cmd.load_cgo(p1, 'test_fill')
-
         def __showaxes(self, minX : float, minY : float, minZ : float) -> None:
             cmd.delete('axes')
             w = 0.15 # cylinder width 
             l = 5.0 # cylinder length
 
-            obj = [
+            obj = [ 
                 CYLINDER, minX, minY, minZ, minX + l, minY, minZ, w, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
                 CYLINDER, minX, minY, minZ, minX, minY + l, minZ, w, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
                 CYLINDER, minX, minY, minZ, minX, minY, minZ + l, w, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
@@ -493,11 +377,27 @@ class Box_s:
 
             cyl_text(obj,plain,[minX + l + 1 + 0.2, minY, minZ - w],'X',0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
             cyl_text(obj,plain,[minX - w, minY + l + 1 + 0.2 , minZ],'Y',0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
-            cyl_text(obj,plain,[minX-w, minY, minZ + l + 1 + 0.2],'Z',0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
+            cyl_text(obj,plain,[minX-w, minY, minZ + l + 1 + 0.2],'Z',0.1,axes=[[0,0,1],[0,1,0],[1,0,0]])
 
             cmd.load_cgo(obj,'axes')
         
-        def __refresh(self) -> None:
+        #TODO: fix repeated code
+
+        def __draw_normals(self, normal, color):
+            w = 0.15 # cylinder width 
+            l = 5.0 # cylinder length
+            n = normal[1]
+
+            obj = [ 
+                CYLINDER, self.center.x, self.center.y, self.center.z, self.center.x + n.x, self.center.y + n.y, self.center.z + n.z, w, color[0], color[1], color[2], color[0], color[1], color[2],
+                #CONE,   minX + l, minY, minZ, minX + 1 + l, minY, minZ, w * 1.5, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 
+            ]
+
+            cyl_text(obj,plain,[self.center.x + n.x, self.center.y + n.y, self.center.z + n.z],str(normal[0]),0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
+
+            cmd.load_cgo(obj,'normal')
+
+        def __refresh_unfilled(self) -> None:
             center = self.center
             dim = self.dim
             
@@ -556,9 +456,144 @@ class Box_s:
             cmd.delete('box')
             cmd.load_cgo(box_cgo, 'box')
 
+
+        # TODO: normals are hardcoded, do not work if the cube is rotated
+        def __refresh_filled(self, settings = {}):
+            # c1 = self.center - self.dim / 2
+            # c2 = c1 + vec3(self.dim.x, 0, 0)
+            # c3 = c2 + vec3(0, 0, self.dim.z)
+            # c4 = c3 + vec3(-self.dim.x, 0, 0)
+            # normal = (c2 - c1).cross((c4 - c1))
+            # normal = normal.normalize()
+
+            center = self.center
+            dim = self.dim
+            
+            # get extremes
+            (minX, minY, minZ) = (center - dim / 2).unpack()
+            (maxX, maxY, maxZ) = (center + dim / 2).unpack()
+
+            c1 = vec3(minX, minY, minZ)
+            c2 = vec3(minX, minY, maxZ)
+            c3 = vec3(minX, maxY, minZ)
+            c4 = vec3(minX, maxY, maxZ)
+
+            c5 = vec3(maxX, minY, minZ)
+            c6 = vec3(maxX, minY, maxZ)
+            c7 = vec3(maxX, maxY, minZ)
+            c8 = vec3(maxX, maxY, maxZ)
+
+
+            #normal1 = (c1.normalize() - c2.normalize()).cross(c1.normalize() - c3.normalize())
+            normal1 = vec3(-1.0, 0.0, 0.0)
+
+            #normal2 = (c5.normalize() - c6.normalize()).cross(c5.normalize() - c7.normalize())
+            normal2 = vec3(1.0, 0.0, 0.0)
+
+            #normal2 = vec3(0.0, 0.0, 1.0)
+            #normal3 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c3.normalize())
+            normal3 = vec3(0.0, 0.0, -1.0)
+
+            #normal4 = (c2.normalize() - c6.normalize()).cross(c2.normalize() - c4.normalize())
+            normal4 = vec3(0.0, 0.0, 1.0)
+            #normal5 = (c3.normalize() - c7.normalize()).cross(c3.normalize() - c4.normalize())
+            normal5 = vec3(0.0, 1.0, 0.0)
+            #normal6 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c2.normalize())
+            normal6 = vec3(0.0, -1.0, 0.0)
+
+
+            # Render the normals
+            self.__draw_normals(['n3', normal3], [0.0, 0.0, 1.0])
+            self.__draw_normals(['n4', normal4], [1.0, 0.5, 0.0])
+            self.__draw_normals(['n6', normal6], [1.0, 0.0, 0.0])
+            self.__draw_normals(['n5', normal5], [0.2, 0.6, 0.2])
+            self.__draw_normals(['n1', normal1], [0.55, 0.1, 0.6])
+            self.__draw_normals(['n2', normal2], [1.0, 1.0, 1.0])
+
+            alpha = 0.8
+
+            box_cgo = [
+                        LINEWIDTH, float(2.0),
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal1.x, normal1.y, normal1.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(0.55), float(0.1), float(0.60), #purple
+
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, minX, maxY, maxZ,       #4
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal2.x, normal2.y, normal2.z,
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(1.0), float(0.0), #yellow
+                        
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, maxX, minY, maxZ,       #6
+                        VERTEX, maxX, maxY, minZ,       #7
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal3.x, normal3.y, normal3.z,
+                        ALPHA, float(alpha), 
+                        COLOR, float(0.0), float(0.0), float(1.0), # blue
+
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, maxX, maxY, minZ,       #7
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal4.x, normal4.y, normal4.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(0.5), float(0.0), # orange
+
+                        VERTEX, minX, maxY, maxZ,       #4
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, maxX, minY, maxZ,       #6
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal5.x, normal5.y, normal5.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(0.2), float(0.6), float(0.2), # green
+
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, maxX, maxY, minZ,       #7
+                        VERTEX, minX, maxY, maxZ,       #4
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal6.x, normal6.y, normal6.z,
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(0.0), float(0.0), # red
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, maxX, minY, maxZ,       #6
+
+                        END
+                ]
+
+            self.__showaxes(minX, minY, minZ)
+            cmd.delete('box')
+            cmd.load_cgo(box_cgo, 'box')
+
         def render(self) -> None:
             if self.hidden == False and self.center != None and self.dim != None:
-                self.__refresh()
+                if self.fill == True:
+                    logging.info('Box here: I m getting filled ...')
+                    self.__refresh_filled()
+                else:
+                    logging.info('Box here: I m getting unfilled ...')
+                    self.__refresh_unfilled()
     
     _instance = None
 
@@ -775,7 +810,13 @@ class bAPI:
         self.gBox = Box_s()
 
     def fill(self):
-        self.gBox.test_fill()
+        self.gBox.setFill(True)
+        self.gBox.render()
+        logging.info(f'BoxAPI here ...')
+    
+    def unfill(self):
+        self.gBox.setFill(False)
+        self.gBox.render()
 
     def extend(self, x, y, z):
         self.gBox.extend(vec3(x, y, z))
@@ -1205,6 +1246,14 @@ def make_dialog():
         print(f'State of the box = {str(boxAPI.gBox.hidden)}')
         logging.info(f'State of the box = {str(boxAPI.gBox.hidden)}')
 
+    def fill_unfill_Box():
+        if form.fillBox_ch.isChecked():
+            boxAPI.fill()
+        else:
+            boxAPI.unfill()
+        
+        logging.info(f'Fill state = {boxAPI.gBox.fill}')
+
     def updateStepSize():
         step_size = form.step_size.value()
         form.centerX.setSingleStep(step_size)
@@ -1501,10 +1550,10 @@ def make_dialog():
     form.runDocking_btn.clicked.connect(runDockingJob)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
+    form.fillBox_ch.stateChanged.connect(fill_unfill_Box)
+
     form.importSele_btn.clicked.connect(import_sele)
     form.close_btn.clicked.connect(onCloseWindow)
-
-    form.testFill_btn.clicked.connect(fill_test)
 
     return dialog
 
