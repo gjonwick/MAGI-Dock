@@ -609,14 +609,27 @@ class Box_s:
 # TODO: IMPORTANT! add coupling between vinaInstance receptors and listWidget (done)
 # TODO: make it thread safe!
 
-'''
+"""
+VinaCoupler knows everything!!!
+Think of it as a type of registry (hence, the singleton).
+
+VinaCoupler doesn't know how you generated receptors, or how you prepared the ligands, another piece of code
+is responsible for that, but however, VinaCoupler is always notified if a receptor was generated or not.
+This poses a new threat; if you decide to run the generation, preparation, etc. steps (in general, any process
+for which VinaCoupler will be notified) in seperate threads, synchronyzation problems may arise. In this approach,
+VinaCoupler is a singleton, and it should be made thread safe so whenever a thread wants to access the vinaInstance,
+it must do so in a "safe" way.
+
+If you generated a receptor, VinaCoupler will know it!
+If you prepared a ligand, VinaCoupler will know it!
+
     attributes:
         receptor/receptors - an instance holding the receptor/receptors currently initiated by the user
         ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both receptors and ligands as they wish)
     XXX:form - XXX:not needed
-'''
+"""
 
-# TODO: observer pattern to notify observers when receptor changes
+# TODO: observer pattern to notify observers when receptor changes (done)
 
 class VinaCoupler:
 
@@ -624,7 +637,6 @@ class VinaCoupler:
 
         def __init__(self)-> None:
             self.receptor = None
-            self._recTest = None
             self.ligands = {}
             self.ligands_to_dock = {}
             self.receptors = {}
@@ -632,16 +644,16 @@ class VinaCoupler:
             self._callbacks = []
             self._ligand_callbacks = []
             self.config = {}
-
-        @property
-        def recTest(self):
-            return self._recTest
+            self.ligand_to_dock = None
         
-        # @recTest.setter
-        # def recTest(self, new_rec):
-        #     old_rec = self._recTest
-        #     self._recTest = new_rec
-        #     self._notify_observers(old_rec, new_rec)
+        #@property
+        def getReceptor(self):
+            return self.receptor
+
+        #@receptor.setter
+        def setReceptor(self, receptor):
+            self.receptor = receptor
+            self._notify_observers()
 
         # Callbacks act as Observers, because we will probably not use observer objects, but just methods, thus callbacks
         def _notify_observers(self):
@@ -658,18 +670,11 @@ class VinaCoupler:
         def register_ligand_callback(self, callback):
             self._ligand_callbacks.append(callback)
 
-        def register_general_calblack(self, l, callback):
-            l.append(callback)
-
         def setForm(self, form):
             self.form = form
 
         def setFlexibleResidues(self, residues):
             self.flexibleResidues = residues
-
-        def setReceptor(self, receptor):
-            self.receptor = receptor
-            self._notify_observers()
 
         def setLigands(self, ligands):
             self.ligands = ligands
@@ -683,9 +688,13 @@ class VinaCoupler:
 
         def addLigandToDock(self, ligand):
             self.ligands_to_dock[ligand.name] = ligand
+            self.setLigandToDock(ligand)
         
         def removeLigandToDock(self, id):
             self.ligands_to_dock.pop(id, None)
+
+        def setLigandToDock(self, ligand):
+            self.ligand_to_dock = ligand
 
         def addReceptor(self, receptor):
             self.receptors[receptor.name] = receptor
@@ -693,58 +702,37 @@ class VinaCoupler:
         
         def removeReceptor(self, id):
             self.receptors.pop(id, None)
-
-        
-        # def addReceptor(self, receptor : 'Receptor'):
-        #     self.receptor[receptor.name] = receptor
-        #     self.loadReceptor(receptor.name)
-
-        def generateReceptor(self):
-            
-            return
-
-        # def loadReceptor(self, receptor):
-        #     self.form.receptor_lstw.addItem(receptor)
-        #     return
-
-            #return getStatusOutput(command)
-        
-        def generateFlexibleResidues(self):
-            #residues = self.receptor.getResidues()
-
-            return
     
     _instance = None
 
     def __init__(self):
         if not VinaCoupler._instance:
             VinaCoupler._instance = VinaCoupler.__VinaCoupler()
-        
-    # Delegate calls
+
+    # Delegate calls - needed only if you dont use getInstance()
     def __getattr__(self, name):
         return getattr(self._instance, name)
 
 
-'''
+"""
     attributes:
         selection
         name - should act as an unique identifier (ID)
         pdbqt_location - the path to the generated/to be generated pdbqt file of the receptor
         flexible_residues - a list (dictionary) of the flexible residues of the receptor
-'''
-
+"""
 class Receptor:
 
-    
     def __init__(self) -> None:
         self.selection = None
         self.name = None
         self.pdbqt_location = None
+        self.rigid_pdbqt = None
+        self.flex_pdbqt = None
+
         self.flexible_path = None
         self.flexible_residues = {}
         self.fromPymol = True
-        self.rigid_pdbqt = None
-        self.flex_pdbqt = None
 
     def flexibleResiduesAsString(self):
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
@@ -789,20 +777,15 @@ class Ligand:
         self.pdb = pdb
         self.pdbqt = ''
         self.fromPymol = True
-        self.isPrepared = False
+        self.prepared = False
 
+    #@property
+    def isPrepared(self):
+        return self.prepared
+    
     def prepare(self):
-        # if self.fromPymol:
-        #     self.pdb  = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdb')
-        #     try:
-        #         cmd.save(self.pdb , self.name)
-        #     except cmd.QuietException:
-        #         pass
-        # else:
-        #     pass
-        
-        # self.pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdbqt')
-        self.isPrepared = True
+        self.prepared = True
+    
 
 class bAPI:
 
@@ -881,7 +864,10 @@ class bAPI:
             f.write("size_y = " + str(gBox.dim.y) + '\n')
             f.write("size_z = " + str(gBox.dim.z) + '\n')
 
-            f.write("out = " + vinaoutput + '\n')
+            if vinaoutput != '':
+                f.write("out = " + vinaoutput + '\n')
+        
+
             
 
     # TODO: handle the case when the name changes
@@ -1024,6 +1010,10 @@ def make_dialog():
         def run(self):
             vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
             receptor = vinaInstance.receptor
+            rigid_receptor = receptor.rigid_pdbqt
+            flex_receptor = receptor.flex_pdbqt
+            ligand_to_dock = vinaInstance.ligand_to_dock
+
             #ligands_to_dock = vinaInstance.ligands_to_dock
 
             # ligands_to_dock = ['str'] # NOTE: vina probably supports batch docking with multiple ligands
@@ -1032,14 +1022,15 @@ def make_dialog():
             # suffix = receptor.pdbqt_location.split('/')[-1]
             # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
 
-            box_path = CONFIG.box_path
+            box_path = vinaInstance.config['box_path']
 
 
-            sample_command = f'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
-                                   --flex TESTING_RECEPTOR_1mrq_flex.pdbqt --ligand TESTING_LIGAND_str.pdbqt \
-                                   --config config.txt \
-                                   --exhaustiveness 32 --out TESTING_RECEPTOR_1mrq_flex_vina_out.pdbqt'
+            sample_command = f'vina --receptor {rigid_receptor} \
+                                   --flex {flex_receptor} --ligand {vinaInstance.ligand_to_dock.pdbqt}.pdbqt \
+                                   --config {box_path} \
+                                   --exhaustiveness 32 --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
 
+            vinaInstance.dockcommand = sample_command
             args = sample_command.split()
 
             p = Popen(args, shell=False)
@@ -1050,7 +1041,8 @@ def make_dialog():
                 # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
             #p.stdout.close()
 
-            (out, err) = p.communicate()
+            #(out, err) = p.communicate()
+            logging.info(sample_command)
 
             self.finished.emit()
         
@@ -1091,13 +1083,14 @@ def make_dialog():
         print(f'New receptor is{vinaInstance.receptor.name}!')
 
     def updateReceptorLists():
+        logging.info("Updating flexible list and loadedReceptor ... ")
         form.loadedReceptor_txt.setText(vinaInstance.receptor.name)
         update_flexible_list()
     
     def update_ligands_list():
         form.ligands_lstw.clear()
         ligand_names = [lig_id for lig_id in vinaInstance.ligands.keys()]
-        prepared_ligands_names = [lig_id for lig_id in vinaInstance.ligands.keys() if vinaInstance.ligands[lig_id].isPrepared]
+        prepared_ligands_names = [lig_id for lig_id in vinaInstance.ligands.keys() if vinaInstance.ligands[lig_id].isPrepared()]
         form.ligands_lstw.addItems(ligand_names)
         form.preparedLigands_lstw.addItems(prepared_ligands_names)
         form.preparedLigands_lstw_2.addItems(prepared_ligands_names)
@@ -1185,7 +1178,7 @@ def make_dialog():
         updateGUIdata()
 
     def save_config():
-        vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'  
+        vinaout = form.vinaoutput.text()
         boxAPI.saveBox("config.txt", vinaout)
         #boxAPI.saveBox(saveTo)
 
@@ -1197,7 +1190,8 @@ def make_dialog():
         global saveTo
         saveTo = filename
         vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
-        boxAPI.saveBox(filename, vinaout)   
+        boxAPI.saveBox(filename, vinaout)  
+        vinaInstance.config['box_path'] = filename 
 
     def browse():
         # filename = getSaveFileNameWithExt(
@@ -1325,29 +1319,24 @@ def make_dialog():
         form.receptor_lstw.clear()
         receptor_names = [rec_id for rec_id in vinaInstance.receptors.keys()]
         form.receptor_lstw.addItems(receptor_names)
+        # TODO: add tooltips here
 
-    # async
-    '''
-    Generates pdbqt file for the receptor.
-
-    '''
+    # TODO: async
     def generate_receptor():
+        ''' Generates pdbqt file for the receptor. '''
+
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
             logging.error('You can only have 1 receptor!')
             return
-
-        #update_flexible_list()
-
         
-        receptor = selection[0].text()
-        
+        receptor_name = selection[0].text()
 
         WORK_DIR = os.getcwd() # TODO: temporary
         prepare_receptor = 'prepare_receptor'
-        receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
-        outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdbqt')
+        receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdb')
+        outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdbqt')
         
         # try:
         #     cmd.save(receptor_path, receptor)
@@ -1363,21 +1352,23 @@ def make_dialog():
         #print(output)
 
         if result == 0:
-            rec = Receptor()
-            rec.name = receptor
-            vinaInstance.addReceptor(rec) # TODO: move after result (done)
-            vinaInstance.receptor.pdbqt_location = outputfile
-            # NOTE: right now only 1 receptor is supported (fixed)
+            receptor = Receptor()
+            receptor.name = receptor_name
+            receptor.pdbqt_location = outputfile
+            vinaInstance.addReceptor(receptor)
+
             update_receptor_list()
             logging.info(f'Success!')
             logging.info(f'Receptor pdbqt location = {vinaInstance.receptor.pdbqt_location}')
 
         else:
-            logging.error(f'Receptor {receptor} pdbqt file could not be generated!')
+            logging.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
             #logging.error(output)
     
-    # async
+    #TODO: async
     def generate_flexible():
+        ''' Generates pdbqt files for the flexible receptor. '''
+
         sele = form.sele_lstw.selectedItems()
         if len(sele) > 1:
             print('One selection at a time please!')
@@ -1388,6 +1379,8 @@ def make_dialog():
             logging.error('Please generate the receptor first!')
             return
 
+
+        # TODO: encapsulate, get selected residues
         sele = sele[0].text()    
         stored.flexible_residues = []
         cmd.iterate(sele + ' and name ca', 'stored.flexible_residues.append([chain, resn, resi])')
@@ -1400,6 +1393,7 @@ def make_dialog():
                 else:
                     chains[chain] = [dotdict({'resn' : resn, 'resi': resi})]
 
+        # TODO: encapsulate, get loaded (loaded automatically into VinaCoupler when you click on it) receptor
         if vinaInstance.receptor != None:
             vinaInstance.receptor.flexible_residues = chains
             update_flexible_list() #TODO: move this from here, create a listener for receptor flexible onChange
@@ -1423,6 +1417,14 @@ def make_dialog():
 
         if result == 0:
             
+            #TODO: autodock should return the names somewhere
+            # check the paper
+            rigid_receptor = receptor_pdbqt.split('.')[0] + '_rigid.pdbqt'
+            flex_receptor = receptor_pdbqt.split('.')[0] + '_flex.pdbqt'
+
+            vinaInstance.receptor.rigid_pdbqt = rigid_receptor
+            vinaInstance.receptor.flex_pdbqt = flex_receptor
+
             #logging.debug(f'{output}')        
             # for chain, contents in chains.items():
             #     for res in contents:
@@ -1501,6 +1503,11 @@ def make_dialog():
         vinaInstance.setReceptor(vinaInstance.receptors[item.text()])
         #vinaInstance.setRecTest(vinaInstance.receptors[item.text()])
         #update_flexible_list() # TODO: refactor, on receptor_change (done)
+    
+    def onSelectLigandToDock(item):
+        vinaInstance.setLigandToDock(vinaInstance.ligands[item.text()])
+        logging.info(f'Ligand to dock is: {vinaInstance.ligand_to_dock.name} at {vinaInstance.ligand_to_dock.pdbqt}')
+
 
     def update_flexible_list():
         form.flexRes_lstw.clear()
@@ -1536,6 +1543,7 @@ def make_dialog():
     form.browseReceptor_btn.clicked.connect(browse_receptors)
     form.genBox_btn.clicked.connect(gen_box)
     form.receptor_lstw.itemClicked.connect(onSelectReceptor)
+    form.preparedLigands_lstw_2.itemClicked.connect(onSelectLigandToDock)
 
     form.genReceptor_btn.clicked.connect(generate_receptor)
     form.genFlexible_btn.clicked.connect(generate_flexible)
