@@ -17,6 +17,7 @@ the additional features of PyQt5.
 from __future__ import absolute_import
 from __future__ import print_function
 import enum
+import math
 from subprocess import Popen, PIPE
 
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
@@ -31,8 +32,20 @@ from pymol.vfont import plain
 from pymol.viewing import center, show  
 from pymol import stored
 
+
+class dotdict(dict):
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
 MODULE_UNLOADED = False
 WORK_DIR = os.getcwd()
+
+CONFIG = dotdict({
+    'vina_path' : None,
+    'autodock_path': None,
+    'box_path': None
+})
 
 # TODO: move this functions to utils
 
@@ -68,7 +81,9 @@ class CustomLogger(logging.Handler):
 
 class vec3:
 
-    def __init__(self, x, y, z) -> None:
+    RSMALL4 = 0.0001
+
+    def __init__(self, x: float, y: float, z: float) -> None:
         self.x = x
         self.y = y
         self.z = z
@@ -88,6 +103,12 @@ class vec3:
     def cross(self, v: 'vec3') -> 'vec3':
         return vec3(self.y * v.z - self.z * v.y, self.z * v.x - self.x * v.z, self.x * v.y - self.y * v.x)
     
+    def normalize(self) -> 'vec3':
+        return vec3(self.x / self.length(), self.y / self.length(), self.z / self.length())
+    
+    def length(self) -> float:
+        return math.sqrt(self.x * self.x + self.y * self.y + self.z * self.z)
+
     def __truediv__(self, c) -> 'vec3':
         return vec3(self.x / c, self.y / c, self.z / c)
 
@@ -100,11 +121,141 @@ class vec3:
     def unpack(self):
         return self.x, self.y, self.z
 
-class dotdict(dict):
-    __getattr__ = dict.get
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
 
+'''
+Experimental -
+    classes to help modify the presentation of the box
+'''
+
+# class CGOWrapper:
+
+#     def __init__(self) -> None:
+#         pass
+
+
+# class CGOOBject:
+    
+#     def make():
+#         pass
+
+# '''
+# TODO: Also, think about it in the same way as the Pipeline
+# '''
+
+# class CGODecorator(CGOOBject):
+
+#     def __init__(self, customCgoObj) -> None:
+#         self.customCgoObj = customCgoObj
+    
+#     def make(self):
+#         return self.customCgoObj.make()
+    
+
+# class LineDecorator(CGODecorator):
+
+#     def __init__(self, customCgoObj) -> None:
+#         super.__init__(customCgoObj)
+
+#     def make(self):
+#         return self.customCgoObj.make().extend(self.addLine())
+    
+#     def addLine(self):
+#         return []
+    
+# class PlaneDecorator(CGODecorator):
+
+#     def __init__(self, customCgoObj) -> None:
+#         super().__init__(customCgoObj)
+    
+#     def make(self):
+#         return self.customCgoObj.make().extend(self.addPlane())
+    
+#     def addPlane(self):
+#         return []
+
+
+# '''
+# Plane is not a native CGO object - TODO: a way to treat it as a CGO object is needed: you can do that - aggregation of CGOs
+# '''
+# class CGOPlane(CGOWrapper):
+
+#     def __init__(self, center: 'vec3', dim: 'vec3') -> None:
+#         super().__init__()
+#         self.center = center
+#         self.dim = dim
+    
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         corner1 = kwds['corner1']
+#         corner2 = kwds['corner2']
+#         corner3 = kwds['corner3']
+#         corner4 = kwds['corner4']
+
+#         planeObj = []
+#         # planeObj.extend(self.point(corner1))
+#         # planeObj.extend(self.point(corner2))
+#         # planeObj.extend(self.point(corner3))
+#         # planeObj.extend(self.point(corner4))
+#         planeObj.extend(self.line(corner1, corner2))
+#         planeObj.extend(self.line(corner2, corner3))
+#         planeObj.extend(self.line(corner3, corner4))
+#         planeObj.extend(self.line(corner4, corner1))
+
+#         planeObj.extend([COLOR, 0.8, 0.8, 0.8])
+#         planeObj.extend([BEGIN, TRIANGLE_STRIP])
+#         planeObj.append(NORMAL)
+#         planeObj.extend([normal.unpack()])
+
+#         for corner in [corner1, corner2, corner3, corner4, corner1]:
+#             planeObj.append(VERTEX)
+#             planeObj.extend(corner)
+#         planeObj.append(END)
+
+#         return planeObj
+
+# class CGOBox(CGOWrapper):
+
+#     def __init__(self, center: 'vec3', dim: 'vec3') -> None:
+#         super().__init__()
+#         self.center = center
+#         self.dim = dim
+
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         plane1 = CGOPlane()
+
+
+# class CGOLine(CGOWrapper):
+
+#     def __init__(self, p1:'vec3', p2:'vec3') -> None:
+#         super().__init__()
+#         self.p1 = p1
+#         self.p2 = p2
+
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         p1 = kwds['p1']
+#         p2 = kwds['p2']
+#         x1, y1, z1 = p1.unpack()
+#         x2, y2, z2 = p2.unpack()
+#         return [
+#                 CYLINDER, 
+#                         float(x1), float(y1), float(z1), 
+#                         float(x2), float(y2), float(z2), 
+#                         0.25, 1, 1, 1, 1, 1, 1
+#                 ]
+
+# class CGOPoint(CGOWrapper):
+
+#     def __init__(self) -> None:
+#         super().__init__()
+    
+#     def __call__(self, *args: Any, **kwds: Any) -> Any:
+#         p = args[0]
+#         x, y, z = p.unpack()
+#         return [
+#                 COLOR, 1, 1, 1, 
+#                 SPHERE, 
+#                     float(x), float(y), float(z), 
+#                     0.5
+#                 ]
 
 # NOTE: Rendering includes communication with pymol (cmd, etc.). May be decoupled from the Box class
 # because it is better to let the plugin handle the rendering and the communication with PyMol
@@ -150,18 +301,72 @@ class Box_s:
         def getDim(self)-> 'vec3':
             return self.dim
         
+        def point(self, p: 'vec3'):
+            x, y, z = p.unpack()
+            return [
+                    COLOR, 1, 1, 1, 
+                    SPHERE, float(x), float(y), float(z), 0.5
+                   ]
 
-        def __line(p1, p2):
-            x1, y1, z1 = p1
-            x2, y2, z2 = p2
-            return [CYLINDER, float(x1), float(y1), float(z1), float(x2), float(y2), float(z2), 0.25, 1, 1, 1, 1, 1, 1]
+        def line(self, p1: 'vec3', p2: 'vec3'):
+            x1, y1, z1 = p1.unpack()
+            x2, y2, z2 = p2.unpack()
+            return [
+                    CYLINDER, 
+                            float(x1), float(y1), float(z1), 
+                            float(x2), float(y2), float(z2), 
+                            0.25, 1, 1, 1, 1, 1, 1
+                    ]
+
+        def plane(self, corner1: 'vec3', corner2: 'vec3', corner3: 'vec3', corner4: 'vec3', normal: 'vec3'):
+            planeObj = []
+   
+            planeObj.extend(self.line(corner1, corner2))
+            planeObj.extend(self.line(corner2, corner3))
+            planeObj.extend(self.line(corner3, corner4))
+            planeObj.extend(self.line(corner4, corner1))
+
+            planeObj.extend([COLOR, 0.8, 0.8, 0.8])
+            planeObj.extend([BEGIN, TRIANGLE_STRIP])
+            planeObj.append(NORMAL)
+            planeObj.extend([normal.unpack()])
+
+            for corner in [corner1, corner2, corner3, corner4, corner1]:
+                planeObj.append(VERTEX)
+                planeObj.extend([corner.unpack()])
+            planeObj.append(END)
+
+            return planeObj
+        
+        def planeFromPoints(self, point1, point2, point3, facetSize):
+            v1 = point2 - point1
+            v1 = v1.normalize()
+
+            v2 = point3 - point1
+            v2 = v2.normalize()
+
+            normal = v1.cross(v2)
+
+            v2 = normal.cross(v1)
+
+            x = v1 * facetSize
+            y = v2 * facetSize
+
+            center = point2
+            
+            corner1 = center + x + y
+            corner2 = center + x - y
+            corner3 = center - x - y
+            corner4 = center - x + y
+            
+            return self.plane(corner1, corner2, corner3, corner4, normal)
 
         def __showaxes(self, minX : float, minY : float, minZ : float) -> None:
             cmd.delete('axes')
             w = 0.15 # cylinder width 
             l = 5.0 # cylinder length
 
-            obj = [
+            obj = [ 
                 CYLINDER, minX, minY, minZ, minX + l, minY, minZ, w, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
                 CYLINDER, minX, minY, minZ, minX, minY + l, minZ, w, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
                 CYLINDER, minX, minY, minZ, minX, minY, minZ + l, w, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
@@ -172,13 +377,31 @@ class Box_s:
 
             cyl_text(obj,plain,[minX + l + 1 + 0.2, minY, minZ - w],'X',0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
             cyl_text(obj,plain,[minX - w, minY + l + 1 + 0.2 , minZ],'Y',0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
-            cyl_text(obj,plain,[minX-w, minY, minZ + l + 1 + 0.2],'Z',0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
+            cyl_text(obj,plain,[minX-w, minY, minZ + l + 1 + 0.2],'Z',0.1,axes=[[0,0,1],[0,1,0],[1,0,0]])
 
             cmd.load_cgo(obj,'axes')
         
-        def __refresh(self) -> None:
+        #TODO: fix repeated code
+
+        def __draw_normals(self, normal, color):
+            w = 0.15 # cylinder width 
+            l = 5.0 # cylinder length
+            n = normal[1]
+
+            obj = [ 
+                CYLINDER, self.center.x, self.center.y, self.center.z, self.center.x + n.x, self.center.y + n.y, self.center.z + n.z, w, color[0], color[1], color[2], color[0], color[1], color[2],
+                #CONE,   minX + l, minY, minZ, minX + 1 + l, minY, minZ, w * 1.5, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 
+            ]
+
+            cyl_text(obj,plain,[self.center.x + n.x, self.center.y + n.y, self.center.z + n.z],str(normal[0]),0.1,axes=[[1,0,0],[0,1,0],[0,0,1]])
+
+            cmd.load_cgo(obj,'normal')
+
+        def __refresh_unfilled(self) -> None:
             center = self.center
             dim = self.dim
+            
+            # get extremes
             (minX, minY, minZ) = (center - dim / 2).unpack()
             (maxX, maxY, maxZ) = (center + dim / 2).unpack()
 
@@ -233,9 +456,144 @@ class Box_s:
             cmd.delete('box')
             cmd.load_cgo(box_cgo, 'box')
 
+
+        # TODO: normals are hardcoded, do not work if the cube is rotated
+        def __refresh_filled(self, settings = {}):
+            # c1 = self.center - self.dim / 2
+            # c2 = c1 + vec3(self.dim.x, 0, 0)
+            # c3 = c2 + vec3(0, 0, self.dim.z)
+            # c4 = c3 + vec3(-self.dim.x, 0, 0)
+            # normal = (c2 - c1).cross((c4 - c1))
+            # normal = normal.normalize()
+
+            center = self.center
+            dim = self.dim
+            
+            # get extremes
+            (minX, minY, minZ) = (center - dim / 2).unpack()
+            (maxX, maxY, maxZ) = (center + dim / 2).unpack()
+
+            c1 = vec3(minX, minY, minZ)
+            c2 = vec3(minX, minY, maxZ)
+            c3 = vec3(minX, maxY, minZ)
+            c4 = vec3(minX, maxY, maxZ)
+
+            c5 = vec3(maxX, minY, minZ)
+            c6 = vec3(maxX, minY, maxZ)
+            c7 = vec3(maxX, maxY, minZ)
+            c8 = vec3(maxX, maxY, maxZ)
+
+
+            #normal1 = (c1.normalize() - c2.normalize()).cross(c1.normalize() - c3.normalize())
+            normal1 = vec3(-1.0, 0.0, 0.0)
+
+            #normal2 = (c5.normalize() - c6.normalize()).cross(c5.normalize() - c7.normalize())
+            normal2 = vec3(1.0, 0.0, 0.0)
+
+            #normal2 = vec3(0.0, 0.0, 1.0)
+            #normal3 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c3.normalize())
+            normal3 = vec3(0.0, 0.0, -1.0)
+
+            #normal4 = (c2.normalize() - c6.normalize()).cross(c2.normalize() - c4.normalize())
+            normal4 = vec3(0.0, 0.0, 1.0)
+            #normal5 = (c3.normalize() - c7.normalize()).cross(c3.normalize() - c4.normalize())
+            normal5 = vec3(0.0, 1.0, 0.0)
+            #normal6 = (c1.normalize() - c5.normalize()).cross(c1.normalize() - c2.normalize())
+            normal6 = vec3(0.0, -1.0, 0.0)
+
+
+            # Render the normals
+            self.__draw_normals(['n3', normal3], [0.0, 0.0, 1.0])
+            self.__draw_normals(['n4', normal4], [1.0, 0.5, 0.0])
+            self.__draw_normals(['n6', normal6], [1.0, 0.0, 0.0])
+            self.__draw_normals(['n5', normal5], [0.2, 0.6, 0.2])
+            self.__draw_normals(['n1', normal1], [0.55, 0.1, 0.6])
+            self.__draw_normals(['n2', normal2], [1.0, 1.0, 1.0])
+
+            alpha = 0.8
+
+            box_cgo = [
+                        LINEWIDTH, float(2.0),
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal1.x, normal1.y, normal1.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(0.55), float(0.1), float(0.60), #purple
+
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, minX, maxY, maxZ,       #4
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal2.x, normal2.y, normal2.z,
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(1.0), float(0.0), #yellow
+                        
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, maxX, minY, maxZ,       #6
+                        VERTEX, maxX, maxY, minZ,       #7
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal3.x, normal3.y, normal3.z,
+                        ALPHA, float(alpha), 
+                        COLOR, float(0.0), float(0.0), float(1.0), # blue
+
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, maxX, maxY, minZ,       #7
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal4.x, normal4.y, normal4.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(0.5), float(0.0), # orange
+
+                        VERTEX, minX, maxY, maxZ,       #4
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, maxX, minY, maxZ,       #6
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal5.x, normal5.y, normal5.z, 
+                        ALPHA, float(alpha),
+                        COLOR, float(0.2), float(0.6), float(0.2), # green
+
+                        VERTEX, minX, maxY, minZ,       #3
+                        VERTEX, maxX, maxY, minZ,       #7
+                        VERTEX, minX, maxY, maxZ,       #4
+                        VERTEX, maxX, maxY, maxZ,       #8
+                        END,
+
+                        BEGIN, TRIANGLE_STRIP,
+                        NORMAL, normal6.x, normal6.y, normal6.z,
+                        ALPHA, float(alpha),
+                        COLOR, float(1.0), float(0.0), float(0.0), # red
+                        VERTEX, minX, minY, minZ,       #1
+                        VERTEX, maxX, minY, minZ,       #5
+                        VERTEX, minX, minY, maxZ,       #2
+                        VERTEX, maxX, minY, maxZ,       #6
+
+                        END
+                ]
+
+            self.__showaxes(minX, minY, minZ)
+            cmd.delete('box')
+            cmd.load_cgo(box_cgo, 'box')
+
         def render(self) -> None:
             if self.hidden == False and self.center != None and self.dim != None:
-                self.__refresh()
+                if self.fill == True:
+                    logging.info('Box here: I m getting filled ...')
+                    self.__refresh_filled()
+                else:
+                    logging.info('Box here: I m getting unfilled ...')
+                    self.__refresh_unfilled()
     
     _instance = None
 
@@ -251,12 +609,27 @@ class Box_s:
 # TODO: IMPORTANT! add coupling between vinaInstance receptors and listWidget (done)
 # TODO: make it thread safe!
 
-'''
+"""
+VinaCoupler knows everything!!!
+Think of it as a type of registry (hence, the singleton).
+
+VinaCoupler doesn't know how you generated receptors, or how you prepared the ligands, another piece of code
+is responsible for that, but however, VinaCoupler is always notified if a receptor was generated or not.
+This poses a new threat; if you decide to run the generation, preparation, etc. steps (in general, any process
+for which VinaCoupler will be notified) in seperate threads, synchronyzation problems may arise. In this approach,
+VinaCoupler is a singleton, and it should be made thread safe so whenever a thread wants to access the vinaInstance,
+it must do so in a "safe" way.
+
+If you generated a receptor, VinaCoupler will know it!
+If you prepared a ligand, VinaCoupler will know it!
+
     attributes:
         receptor/receptors - an instance holding the receptor/receptors currently initiated by the user
         ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both receptors and ligands as they wish)
     XXX:form - XXX:not needed
-'''
+"""
+
+# TODO: observer pattern to notify observers when receptor changes (done)
 
 class VinaCoupler:
 
@@ -268,6 +641,34 @@ class VinaCoupler:
             self.ligands_to_dock = {}
             self.receptors = {}
             self.form = None
+            self._callbacks = []
+            self._ligand_callbacks = []
+            self.config = {}
+            self.ligand_to_dock = None
+        
+        #@property
+        def getReceptor(self):
+            return self.receptor
+
+        #@receptor.setter
+        def setReceptor(self, receptor):
+            self.receptor = receptor
+            self._notify_observers()
+
+        # Callbacks act as Observers, because we will probably not use observer objects, but just methods, thus callbacks
+        def _notify_observers(self):
+            for callback in self._callbacks:
+                callback()
+        
+        def _notify_ligand_observers(self):
+            for callback in self._ligand_callbacks:
+                callback()
+            
+        def register_callback(self, callback):
+            self._callbacks.append(callback)
+        
+        def register_ligand_callback(self, callback):
+            self._ligand_callbacks.append(callback)
 
         def setForm(self, form):
             self.form = form
@@ -275,72 +676,63 @@ class VinaCoupler:
         def setFlexibleResidues(self, residues):
             self.flexibleResidues = residues
 
-        def setReceptor(self, receptor):
-            self.receptor = receptor
-
         def setLigands(self, ligands):
             self.ligands = ligands
         
         def addLigand(self, ligand):
             self.ligands[ligand.name] = ligand
+            self._notify_ligand_observers()
         
         def removeLigand(self, id):
             self.ligands.pop(id, None)
 
         def addLigandToDock(self, ligand):
             self.ligands_to_dock[ligand.name] = ligand
+            self.setLigandToDock(ligand)
         
         def removeLigandToDock(self, id):
             self.ligands_to_dock.pop(id, None)
 
+        def setLigandToDock(self, ligand):
+            self.ligand_to_dock = ligand
+
+        def addReceptor(self, receptor):
+            self.receptors[receptor.name] = receptor
+            self.setReceptor(receptor)
         
-        # def addReceptor(self, receptor : 'Receptor'):
-        #     self.receptor[receptor.name] = receptor
-        #     self.loadReceptor(receptor.name)
-
-        def generateReceptor(self):
-            
-            return
-
-        # def loadReceptor(self, receptor):
-        #     self.form.receptor_lstw.addItem(receptor)
-        #     return
-
-            #return getStatusOutput(command)
-        
-        def generateFlexibleResidues(self):
-            #residues = self.receptor.getResidues()
-
-            return
+        def removeReceptor(self, id):
+            self.receptors.pop(id, None)
     
     _instance = None
 
     def __init__(self):
         if not VinaCoupler._instance:
             VinaCoupler._instance = VinaCoupler.__VinaCoupler()
-        
-    # Delegate calls
+
+    # Delegate calls - needed only if you dont use getInstance()
     def __getattr__(self, name):
         return getattr(self._instance, name)
 
 
-'''
+"""
     attributes:
         selection
         name - should act as an unique identifier (ID)
         pdbqt_location - the path to the generated/to be generated pdbqt file of the receptor
         flexible_residues - a list (dictionary) of the flexible residues of the receptor
-'''
-
+"""
 class Receptor:
 
-    
     def __init__(self) -> None:
         self.selection = None
         self.name = None
         self.pdbqt_location = None
+        self.rigid_pdbqt = None
+        self.flex_pdbqt = None
+
         self.flexible_path = None
         self.flexible_residues = {}
+        self.fromPymol = True
 
     def flexibleResiduesAsString(self):
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
@@ -376,6 +768,7 @@ class Receptor:
         pdb - the path to the pdb (or .gro, .mol2, etc.) file, if any
         pdbqt - the path to the generated pdbqt file, if any
         fromPymol - flag that tracks if the ligand is loaded from the user's local system, or from pymol
+        isPrepared - flag that tracks if the ligand is prepared or not (if prepared, it's ready to use in docking)
 '''
 class Ligand:
 
@@ -384,25 +777,29 @@ class Ligand:
         self.pdb = pdb
         self.pdbqt = ''
         self.fromPymol = True
+        self.prepared = False
 
+    #@property
+    def isPrepared(self):
+        return self.prepared
+    
     def prepare(self):
-
-        # if self.fromPymol:
-        #     self.pdb  = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdb')
-        #     try:
-        #         cmd.save(self.pdb , self.name)
-        #     except cmd.QuietException:
-        #         pass
-        # else:
-        #     pass
-        
-        # self.pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{self.name}.pdbqt')
-        pass
+        self.prepared = True
+    
 
 class bAPI:
 
     def __init__(self) -> None:
         self.gBox = Box_s()
+
+    def fill(self):
+        self.gBox.setFill(True)
+        self.gBox.render()
+        logging.info(f'BoxAPI here ...')
+    
+    def unfill(self):
+        self.gBox.setFill(False)
+        self.gBox.render()
 
     def extend(self, x, y, z):
         self.gBox.extend(vec3(x, y, z))
@@ -467,7 +864,10 @@ class bAPI:
             f.write("size_y = " + str(gBox.dim.y) + '\n')
             f.write("size_z = " + str(gBox.dim.z) + '\n')
 
-            f.write("out = " + vinaoutput + '\n')
+            if vinaoutput != '':
+                f.write("out = " + vinaoutput + '\n')
+        
+
             
 
     # TODO: handle the case when the name changes
@@ -610,21 +1010,27 @@ def make_dialog():
         def run(self):
             vinaInstance = VinaCoupler() # NOTE: DANGEROUS (VinaCoupler not yet thread safe)
             receptor = vinaInstance.receptor
+            rigid_receptor = receptor.rigid_pdbqt
+            flex_receptor = receptor.flex_pdbqt
+            ligand_to_dock = vinaInstance.ligand_to_dock
+
             #ligands_to_dock = vinaInstance.ligands_to_dock
 
-            # ligands_to_dock = ['str']
+            # ligands_to_dock = ['str'] # NOTE: vina probably supports batch docking with multiple ligands
             # ligand = vinaInstance.ligands['str']
             # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
             # suffix = receptor.pdbqt_location.split('/')[-1]
             # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
 
+            box_path = vinaInstance.config['box_path']
 
 
-            sample_command = f'vina --receptor TESTING_RECEPTOR_1mrq_rigid.pdbqt \
-                                   --flex TESTING_RECEPTOR_1mrq_flex.pdbqt --ligand TESTING_LIGAND_str.pdbqt \
-                                   --config config.txt \
-                                   --exhaustiveness 32 --out TESTING_RECEPTOR_1mrq_flex_vina_out.pdbqt'
+            sample_command = f'vina --receptor {rigid_receptor} \
+                                   --flex {flex_receptor} --ligand {vinaInstance.ligand_to_dock.pdbqt}.pdbqt \
+                                   --config {box_path} \
+                                   --exhaustiveness 32 --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
 
+            vinaInstance.dockcommand = sample_command
             args = sample_command.split()
 
             p = Popen(args, shell=False)
@@ -635,11 +1041,22 @@ def make_dialog():
                 # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
             #p.stdout.close()
 
-            (out, err) = p.communicate()
+            #(out, err) = p.communicate()
+            logging.info(sample_command)
 
             self.finished.emit()
         
-       
+        # TODO: no need to find rigid here, store it in the receptor
+        def process_args(self, receptor, ligands):
+            receptor_pdbqt = receptor.pdbqt_location
+            receptor_core = receptor_pdbqt.split('.')[0].split('/')[-1]
+            
+            rigid = f'{WORK_DIR}/{receptor_core}_rigid.pdbqt'
+            flex = f'{WORK_DIR}/{receptor_core}_flex.pdbqt'
+            ligands = [ligand.pdbqt for ligand in ligands]
+
+
+
 
 
     #import boxAPI
@@ -656,11 +1073,32 @@ def make_dialog():
     form = loadUi(uifile, dialog)
     
     vinaInstance.setForm(form)
-    
+
     logger = CustomLogger(form.plainTextEdit)
     logger.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logging.getLogger().addHandler(logger)
     logging.getLogger().setLevel(logging.INFO)
+
+    def printRecChange():
+        print(f'New receptor is{vinaInstance.receptor.name}!')
+
+    def updateReceptorLists():
+        logging.info("Updating flexible list and loadedReceptor ... ")
+        form.loadedReceptor_txt.setText(vinaInstance.receptor.name)
+        update_flexible_list()
+    
+    def update_ligands_list():
+        form.ligands_lstw.clear()
+        ligand_names = [lig_id for lig_id in vinaInstance.ligands.keys()]
+        prepared_ligands_names = [lig_id for lig_id in vinaInstance.ligands.keys() if vinaInstance.ligands[lig_id].isPrepared()]
+        form.ligands_lstw.addItems(ligand_names)
+        form.preparedLigands_lstw.addItems(prepared_ligands_names)
+        form.preparedLigands_lstw_2.addItems(prepared_ligands_names)
+    
+    
+    vinaInstance.register_callback(printRecChange)
+    vinaInstance.register_callback(updateReceptorLists)
+    vinaInstance.register_ligand_callback(update_ligands_list)
 
     def logToWidget(m):
         logging.info(m)
@@ -740,7 +1178,7 @@ def make_dialog():
         updateGUIdata()
 
     def save_config():
-        vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'  
+        vinaout = form.vinaoutput.text()
         boxAPI.saveBox("config.txt", vinaout)
         #boxAPI.saveBox(saveTo)
 
@@ -752,7 +1190,8 @@ def make_dialog():
         global saveTo
         saveTo = filename
         vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
-        boxAPI.saveBox(filename, vinaout)   
+        boxAPI.saveBox(filename, vinaout)  
+        vinaInstance.config['box_path'] = filename 
 
     def browse():
         # filename = getSaveFileNameWithExt(
@@ -772,7 +1211,13 @@ def make_dialog():
         if filename != ('', ''):
             form.ligandPath_txt.setText(filename[0])
 
-           
+    def browse_receptors():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            dialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.receptorPath_txt.setText(filename[0])
 
     def show_hide_Box():
         if form.showBox_ch.isChecked():
@@ -794,6 +1239,14 @@ def make_dialog():
 
         print(f'State of the box = {str(boxAPI.gBox.hidden)}')
         logging.info(f'State of the box = {str(boxAPI.gBox.hidden)}')
+
+    def fill_unfill_Box():
+        if form.fillBox_ch.isChecked():
+            boxAPI.fill()
+        else:
+            boxAPI.unfill()
+        
+        logging.info(f'Fill state = {boxAPI.gBox.fill}')
 
     def updateStepSize():
         step_size = form.step_size.value()
@@ -823,10 +1276,6 @@ def make_dialog():
         logging.info('Selections imported!')
 
     # ligand handler methods
-    def update_ligands_list():
-        form.ligands_lstw.clear()
-        ligand_names = [lig_id for lig_id in vinaInstance.ligands.keys()]
-        form.ligands_lstw.addItems(ligand_names)
     
     def add_ligand():
         selection = form.sele_lstw_2.selectedItems()
@@ -848,6 +1297,15 @@ def make_dialog():
         vinaInstance.addLigand(ligand)
 
         update_ligands_list()
+
+    def load_receptor():
+        receptor_pdb_path = form.receptorPath_txt.text().strip()
+        receptor_name = receptor_pdb_path.split('/')[-1].split('.')[0]
+
+        receptor = Receptor()
+        receptor.name = receptor_name
+        receptor.fromPymol = False
+        vinaInstance.addReceptor(receptor)
         
     def remove_ligand():
         selection = form.ligands_lstw.selectedItems()
@@ -856,55 +1314,61 @@ def make_dialog():
 
         update_ligands_list()
 
-    # async
-    '''
-    Generates pdbqt file for the receptor.
 
-    '''
+    def update_receptor_list():
+        form.receptor_lstw.clear()
+        receptor_names = [rec_id for rec_id in vinaInstance.receptors.keys()]
+        form.receptor_lstw.addItems(receptor_names)
+        # TODO: add tooltips here
+
+    # TODO: async
     def generate_receptor():
+        ''' Generates pdbqt file for the receptor. '''
+
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
             logging.error('You can only have 1 receptor!')
             return
         
-        rec = Receptor()
-        vinaInstance.setReceptor(rec)
-        receptor = selection[0].text()
-        vinaInstance.receptor.name = receptor
-        
+        receptor_name = selection[0].text()
+
         WORK_DIR = os.getcwd() # TODO: temporary
         prepare_receptor = 'prepare_receptor'
-        receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
-        outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdbqt')
+        receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdb')
+        outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdbqt')
         
-        try:
-            cmd.save(receptor_path, receptor)
-        except cmd.QuietException:
-            pass
+        # try:
+        #     cmd.save(receptor_path, receptor)
+        # except cmd.QuietException:
+        #     pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens' 
         logging.info(command)
 
-        result, output = getStatusOutput(command)
-        
+        #result, output = getStatusOutput(command)
+        result = 0
         logging.info('Generating receptor ...')
-        print(output)
+        #print(output)
 
         if result == 0:
-            vinaInstance.receptor.pdbqt_location = outputfile
-            # NOTE: right now only 1 receptor is supported
-            form.receptor_lstw.clear()
-            form.receptor_lstw.addItem(receptor)
+            receptor = Receptor()
+            receptor.name = receptor_name
+            receptor.pdbqt_location = outputfile
+            vinaInstance.addReceptor(receptor)
+
+            update_receptor_list()
             logging.info(f'Success!')
             logging.info(f'Receptor pdbqt location = {vinaInstance.receptor.pdbqt_location}')
 
         else:
-            logging.error(f'Receptor {receptor} pdbqt file could not be generated!')
-            logging.error(output)
+            logging.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
+            #logging.error(output)
     
-    # async
+    #TODO: async
     def generate_flexible():
+        ''' Generates pdbqt files for the flexible receptor. '''
+
         sele = form.sele_lstw.selectedItems()
         if len(sele) > 1:
             print('One selection at a time please!')
@@ -915,6 +1379,8 @@ def make_dialog():
             logging.error('Please generate the receptor first!')
             return
 
+
+        # TODO: encapsulate, get selected residues
         sele = sele[0].text()    
         stored.flexible_residues = []
         cmd.iterate(sele + ' and name ca', 'stored.flexible_residues.append([chain, resn, resi])')
@@ -927,8 +1393,10 @@ def make_dialog():
                 else:
                     chains[chain] = [dotdict({'resn' : resn, 'resi': resi})]
 
+        # TODO: encapsulate, get loaded (loaded automatically into VinaCoupler when you click on it) receptor
         if vinaInstance.receptor != None:
             vinaInstance.receptor.flexible_residues = chains
+            update_flexible_list() #TODO: move this from here, create a listener for receptor flexible onChange
 
         res_string = vinaInstance.receptor.flexibleResiduesAsString()
         logging.info(res_string)
@@ -943,16 +1411,24 @@ def make_dialog():
         command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}' 
         logging.info(command)
 
-        result, output = getStatusOutput(command)
-
-        print(output)
+        #result, output = getStatusOutput(command)
+        result = 0
+        #print(output)
 
         if result == 0:
             
-            logging.debug(f'{output}')        
-            for chain, contents in chains.items():
-                for res in contents:
-                    form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
+            #TODO: autodock should return the names somewhere
+            # check the paper
+            rigid_receptor = receptor_pdbqt.split('.')[0] + '_rigid.pdbqt'
+            flex_receptor = receptor_pdbqt.split('.')[0] + '_flex.pdbqt'
+
+            vinaInstance.receptor.rigid_pdbqt = rigid_receptor
+            vinaInstance.receptor.flex_pdbqt = flex_receptor
+
+            #logging.debug(f'{output}')        
+            # for chain, contents in chains.items():
+            #     for res in contents:
+            #         form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
                 
             logging.info(f'Success generating flexible receptor with flexible residues {res_string}')
         else:
@@ -998,22 +1474,54 @@ def make_dialog():
 
             command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt}'
 
-            result, output = getStatusOutput(command)
+            #result, output = getStatusOutput(command)
+            result = 0
 
             if result == 0:
-                logging.debug(output)
-
+                #logging.debug(output)
+                ligand.prepare()
                 #ligand.pdbqt = ligand_pdbqt
+                update_ligands_list()
+                '''
                 form.preparedLigands_lstw.addItem(ligand.name)
+                form.preparedLigands_lstw_2.addItem(ligand.name)
+                '''
+
                 logging.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
             else:
                 logging.info(f'An error occurred while trying to prepare the ligand ...')
-                logging.info(output)
+                #logging.info(output)
     
     def onCloseWindow():
         cmd.delete('box')
         cmd.delete('axes')
         dialog.close()
+
+    def onSelectReceptor(item):
+        logging.info(f'Receptor {item.text()} selected')
+        #vinaInstance.receptor = vinaInstance.receptors[item.text()]
+        vinaInstance.setReceptor(vinaInstance.receptors[item.text()])
+        #vinaInstance.setRecTest(vinaInstance.receptors[item.text()])
+        #update_flexible_list() # TODO: refactor, on receptor_change (done)
+    
+    def onSelectLigandToDock(item):
+        vinaInstance.setLigandToDock(vinaInstance.ligands[item.text()])
+        logging.info(f'Ligand to dock is: {vinaInstance.ligand_to_dock.name} at {vinaInstance.ligand_to_dock.pdbqt}')
+
+
+    def update_flexible_list():
+        form.flexRes_lstw.clear()
+        flexibles = vinaInstance.receptor.flexible_residues
+        if len(flexibles) != 0:
+            for chain, contents in flexibles.items():
+                for res in contents:
+                    form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
+
+
+
+
+    def fill_test():
+        boxAPI.fill()
 
     ########################## </Callbacks> #############################
 
@@ -1032,7 +1540,10 @@ def make_dialog():
     form.saveAs_btn.clicked.connect(saveAs_config)
     form.browse_btn.clicked.connect(browse)
     form.browseLigand_btn.clicked.connect(browse_ligands)
+    form.browseReceptor_btn.clicked.connect(browse_receptors)
     form.genBox_btn.clicked.connect(gen_box)
+    form.receptor_lstw.itemClicked.connect(onSelectReceptor)
+    form.preparedLigands_lstw_2.itemClicked.connect(onSelectLigandToDock)
 
     form.genReceptor_btn.clicked.connect(generate_receptor)
     form.genFlexible_btn.clicked.connect(generate_flexible)
@@ -1043,9 +1554,12 @@ def make_dialog():
     form.removeLigand_btn.clicked.connect(remove_ligand)
     form.addLigand_btn.clicked.connect(add_ligand)
     form.loadLigand_btn.clicked.connect(load_ligand)
+    form.loadReceptor_btn.clicked.connect(load_receptor)
     form.runDocking_btn.clicked.connect(runDockingJob)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
+    form.fillBox_ch.stateChanged.connect(fill_unfill_Box)
+
     form.importSele_btn.clicked.connect(import_sele)
     form.close_btn.clicked.connect(onCloseWindow)
 

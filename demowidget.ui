@@ -2,6 +2,9 @@
 <ui version="4.0">
  <class>Form</class>
  <widget class="QWidget" name="Form">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -164,6 +167,9 @@
    </property>
    <property name="singleStep">
     <double>0.250000000000000</double>
+   </property>
+   <property name="stepType">
+    <enum>QAbstractSpinBox::DefaultStepType</enum>
    </property>
   </widget>
   <widget class="QLabel" name="label_4">
@@ -560,7 +566,7 @@
     </widget>
     <widget class="QListWidget" name="flexRes_lstw">
      <property name="enabled">
-      <bool>true</bool>
+      <bool>false</bool>
      </property>
      <property name="geometry">
       <rect>
@@ -766,8 +772,8 @@
     <widget class="QLineEdit" name="selectConfig_txt">
      <property name="geometry">
       <rect>
-       <x>220</x>
-       <y>30</y>
+       <x>20</x>
+       <y>60</y>
        <width>200</width>
        <height>25</height>
       </rect>
@@ -786,6 +792,161 @@
       <string>Run Docking Job</string>
      </property>
     </widget>
+    <widget class="QListWidget" name="preparedLigands_lstw_2">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>480</x>
+       <y>60</y>
+       <width>121</width>
+       <height>131</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="Test tooltip"/>
+     </property>
+     <property name="toolTipDuration">
+      <number>3</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_18">
+     <property name="geometry">
+      <rect>
+       <x>480</x>
+       <y>40</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Prepared Ligands:</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="ligandsToDock_lstw">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>710</x>
+       <y>60</y>
+       <width>121</width>
+       <height>131</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="Test tooltip"/>
+     </property>
+     <property name="toolTipDuration">
+      <number>3</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_19">
+     <property name="geometry">
+      <rect>
+       <x>710</x>
+       <y>40</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ligands to dock:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="addLigandToDock_btn">
+     <property name="geometry">
+      <rect>
+       <x>620</x>
+       <y>110</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton">
+     <property name="geometry">
+      <rect>
+       <x>230</x>
+       <y>60</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_2">
+     <property name="geometry">
+      <rect>
+       <x>330</x>
+       <y>60</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_20">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>40</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Prepared ligands:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="loadedReceptor_txt">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>120</y>
+       <width>200</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_21">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>100</y>
+       <width>71</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Receptor</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="pushButton_3">
+     <property name="geometry">
+      <rect>
+       <x>230</x>
+       <y>120</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Select</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="viewport_tab">
     <attribute name="title">
@@ -794,6 +955,9 @@
    </widget>
   </widget>
   <widget class="QPlainTextEdit" name="plainTextEdit">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>370</x>
@@ -831,6 +995,22 @@
    </property>
    <property name="text">
     <string>Refresh</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="fillBox_ch">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>250</x>
+     <y>510</y>
+     <width>92</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Fill</string>
    </property>
   </widget>
  </widget>
