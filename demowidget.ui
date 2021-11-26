@@ -415,7 +415,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="receptor_tab">
     <attribute name="title">
@@ -811,6 +811,12 @@
     <cursorShape>IBeamCursor</cursorShape>
    </property>
    <property name="mouseTracking">
+    <bool>false</bool>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+   <property name="centerOnScroll">
     <bool>false</bool>
    </property>
   </widget>
