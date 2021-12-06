@@ -102,7 +102,8 @@ class ReceptorJobController:
         # TODO: encapsulate, get loaded (loaded automatically into VinaCoupler when you click on it) receptor
         if adContext.receptor is not None:
             adContext.receptor.flexible_residues = chains
-            adContext.setReceptor(adContext.receptor) # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
+            adContext.setReceptor(
+                adContext.receptor)  # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
 
         res_string = adContext.receptor.flexibleResiduesAsString()
         logging.info(res_string)
@@ -226,10 +227,24 @@ class VinaWorker(QtCore.QObject):
 
     def run(self):
         adContext = ADContext()  # NOTE: DANGEROUS (ADContext not yet thread safe)
+        box_path = adContext.config['box_path']
+
         receptor = adContext.receptor
         rigid_receptor = receptor.rigid_pdbqt
         flex_receptor = receptor.flex_pdbqt
-        ligand_to_dock = adContext.ligand_to_dock
+        # ligand_to_dock = adContext.ligand_to_dock
+
+        ligands_to_dock = adContext.ligands_to_dock
+        sample_command = ''
+        if len(ligands_to_dock) == 1:
+            ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
+            sample_command = f'vina --receptor {rigid_receptor} \
+                                   --flex {flex_receptor} --ligand {ligand_to_dock.pdbqt} \
+                                   --config {box_path} \
+                                   --exhaustiveness 32 --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
+        else:
+            # batch dock
+            pass
 
         # ligands_to_dock = adContext.ligands_to_dock
 
@@ -239,15 +254,9 @@ class VinaWorker(QtCore.QObject):
         # suffix = receptor.pdbqt_location.split('/')[-1]
         # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
 
-        box_path = adContext.config['box_path']
-
-        sample_command = f'vina --receptor {rigid_receptor} \
-                               --flex {flex_receptor} --ligand {adContext.ligand_to_dock.pdbqt}.pdbqt \
-                               --config {box_path} \
-                               --exhaustiveness 32 --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
-
         adContext.dockcommand = sample_command
         args = sample_command.split()
+        print(f'Executing {args}')
 
         p = Popen(args, shell=False)
         self.progress.emit()
