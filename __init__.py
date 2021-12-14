@@ -281,7 +281,7 @@ def make_dialog():
         saveTo = filename
         vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
         boxAPI.save_box(filename, vinaout)
-        adContext.config['box_path'] = filename
+        #adContext.config['box_path'] = filename
 
     def browse():
         # filename = getSaveFileNameWithExt(
@@ -541,6 +541,57 @@ def make_dialog():
     def fill_test():
         boxAPI.fill()
 
+    def saveConfig():
+        adfrPath = form.adfrPath_txt.text()
+        mglPath = form.mglPath_txt.text()
+        vinaPath = form.vinaPath_txt.text()
+        configPath = form.configPath_txt.text()
+        adContext.config['adfr'] = adfrPath
+        adContext.config['mglPath'] = mglPath
+        adContext.config['vinaPath'] = vinaPath
+        adContext.config['configPath'] = configPath
+
+
+    def OnBrowseADFRClicked():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+        if filename != ('', ''):
+            form.adfrPath_txt.setText(filename[0])
+            adContext.config['adfr_path'] = filename[0]
+            logging.info(adContext.config['adfr_path'])
+
+    def OnBrowseMGLClicked():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+        if filename != ('', ''):
+            form.mglPath_txt.setText(filename[0])
+            adContext.config['mgl_path'] = filename[0]
+            logging.info(adContext.config['mgl_path'])
+
+    def OnBrowseVinaClicked():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+        if filename != ('', ''):
+            form.vinaPath_txt.setText(filename[0])
+            adContext.config['vina_path'] = filename[0]
+            logging.info(adContext.config['vina_path'])
+
+    def OnBrowseConfigClicked():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.configPath_txt.setText(filename[0])
+            adContext.config['box_path'] = filename[0]
+            logging.info(adContext.config['box_path'])
+
+    def dummy():
+        pass
+
     ########################## </Callbacks> #############################
 
     # bind callbacks
@@ -582,6 +633,13 @@ def make_dialog():
 
     form.importSele_btn.clicked.connect(import_sele)
     form.close_btn.clicked.connect(onCloseWindow)
+
+    form.browseADFR_btn.clicked.connect(OnBrowseADFRClicked)
+    form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)
+    form.browseVina_btn.clicked.connect(OnBrowseVinaClicked)
+    form.browseConfig_btn.clicked.connect(OnBrowseConfigClicked)
+
+    form.saveConfig_btn.clicked.connect(saveConfig)
 
     return qDialog
 

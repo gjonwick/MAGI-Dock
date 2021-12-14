@@ -35,7 +35,7 @@ class ADContext:
             self._callbacks = []
             self._ligand_callbacks = []
             self._ligandondock_callbacks = []
-            self.config = {}
+            self.config = {'vina_path': None, 'adfr_path': None, 'mgl_path': None, 'box_path': None}
             self.ligand_to_dock = None
 
         def getReceptor(self):

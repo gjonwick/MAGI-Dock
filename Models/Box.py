@@ -190,12 +190,14 @@ class Box:
             normal6 = vec3(0.0, -1.0, 0.0)
 
             # Render the normals
+            '''
             self.__draw_normals(['n3', normal3], [0.0, 0.0, 1.0])
             self.__draw_normals(['n4', normal4], [1.0, 0.5, 0.0])
             self.__draw_normals(['n6', normal6], [1.0, 0.0, 0.0])
             self.__draw_normals(['n5', normal5], [0.2, 0.6, 0.2])
             self.__draw_normals(['n1', normal1], [0.55, 0.1, 0.6])
             self.__draw_normals(['n2', normal2], [1.0, 1.0, 1.0])
+            '''
 
             alpha = 0.8
 

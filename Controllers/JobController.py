@@ -74,6 +74,7 @@ class ReceptorJobController:
         from pymol import stored
         """ Generates pdbqt files for the flexible receptor. """
         adContext = ADContext()
+        adfr_path = adContext.config['adfr_path']
         form = self.form
 
         sele = form.sele_lstw.selectedItems()
@@ -227,7 +228,10 @@ class VinaWorker(QtCore.QObject):
 
     def run(self):
         adContext = ADContext()  # NOTE: DANGEROUS (ADContext not yet thread safe)
+
         box_path = adContext.config['box_path']
+        vina_path = adContext.config['vina_path']
+
 
         receptor = adContext.receptor
         rigid_receptor = receptor.rigid_pdbqt
