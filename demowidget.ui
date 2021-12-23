@@ -421,8 +421,175 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>4</number>
    </property>
+   <widget class="QWidget" name="config_tab">
+    <attribute name="title">
+     <string>Config</string>
+    </attribute>
+    <widget class="QLineEdit" name="adfrPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>60</y>
+       <width>113</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="mglPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>120</y>
+       <width>113</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vinaPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>180</y>
+       <width>113</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="configPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>120</x>
+       <y>240</y>
+       <width>113</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_22">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>65</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>ADFR:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_23">
+     <property name="geometry">
+      <rect>
+       <x>40</x>
+       <y>125</y>
+       <width>71</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>MGLTools:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_24">
+     <property name="geometry">
+      <rect>
+       <x>75</x>
+       <y>185</y>
+       <width>41</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Vina:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_25">
+     <property name="geometry">
+      <rect>
+       <x>65</x>
+       <y>245</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>config:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseADFR_btn">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>60</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseMGL_btn">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>120</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseVina_btn">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>180</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseConfig_btn">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>240</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="saveConfig_btn">
+     <property name="geometry">
+      <rect>
+       <x>760</x>
+       <y>350</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Save</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="viewport_tab">
+    <attribute name="title">
+     <string>ViewPort</string>
+    </attribute>
+   </widget>
    <widget class="QWidget" name="receptor_tab">
     <attribute name="title">
      <string>Receptor</string>
@@ -751,17 +918,17 @@
       <string>Add</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="checkBox">
+    <widget class="QCheckBox" name="checkBox_hydrogens">
      <property name="geometry">
       <rect>
        <x>290</x>
        <y>200</y>
-       <width>131</width>
+       <width>151</width>
        <height>23</height>
       </rect>
      </property>
      <property name="text">
-      <string>Add Hydrogens</string>
+      <string>Check Hydrogens</string>
      </property>
     </widget>
    </widget>
@@ -769,7 +936,7 @@
     <attribute name="title">
      <string>Docking</string>
     </attribute>
-    <widget class="QLineEdit" name="selectConfig_txt">
+    <widget class="QLineEdit" name="preparedLigand_txt">
      <property name="geometry">
       <rect>
        <x>20</x>
@@ -853,14 +1020,17 @@
       </rect>
      </property>
      <property name="text">
-      <string>Ligands to dock:</string>
+      <string>Docked Ligands:</string>
      </property>
     </widget>
     <widget class="QPushButton" name="addLigandToDock_btn">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>620</x>
-       <y>110</y>
+       <y>90</y>
        <width>71</width>
        <height>25</height>
       </rect>
@@ -869,7 +1039,7 @@
       <string>Add</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="browsePreparedLigand_btn">
      <property name="geometry">
       <rect>
        <x>230</x>
@@ -882,7 +1052,7 @@
       <string>Browse</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="loadPreparedLigand_btn">
      <property name="geometry">
       <rect>
        <x>330</x>
@@ -935,6 +1105,9 @@
      </property>
     </widget>
     <widget class="QPushButton" name="pushButton_3">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>230</x>
@@ -947,11 +1120,22 @@
       <string>Select</string>
      </property>
     </widget>
-   </widget>
-   <widget class="QWidget" name="viewport_tab">
-    <attribute name="title">
-     <string>ViewPort</string>
-    </attribute>
+    <widget class="QPushButton" name="removeLigandToDock_btn">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>620</x>
+       <y>125</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Remove</string>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QPlainTextEdit" name="plainTextEdit">
