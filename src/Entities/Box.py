@@ -1,8 +1,7 @@
-from utils.vec3 import vec3
+from src.utils.vec3 import vec3
 from pymol.cgo import *
 from pymol import cmd
 from pymol.vfont import plain
-import logging
 
 
 # NOTE: Rendering includes communication with pymol (cmd, etc.). May be decoupled from the Box class

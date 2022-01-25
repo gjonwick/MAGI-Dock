@@ -16,9 +16,6 @@ the additional features of PyQt5.
 
 from __future__ import absolute_import
 from __future__ import print_function
-import enum
-import math
-from subprocess import Popen, PIPE
 
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
 # executed on PyMOL's startup. Only import such modules inside functions.
@@ -26,8 +23,12 @@ from subprocess import Popen, PIPE
 import os
 import sys
 
+from src.ADContext import ADContext
+from src.Controllers.BoxAPI import BoxAPI
+from src.utils.util import dotdict
+
 sys.path.append(os.path.join(os.path.dirname(__file__)))
-from dependencies import *
+from src.dependencies import *
 
 print(TESTIMPORT)
 import logging
@@ -130,7 +131,6 @@ def make_dialog():
     from pymol.Qt import QtCore
     from pymol.Qt.utils import loadUi
     from pymol.Qt.utils import getSaveFileNameWithExt
-    import time
 
     class ViewPort(QtOpenGL.QGLWidget):
         def __init__(self, parent=None):
