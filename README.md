@@ -1,2 +1,2 @@
-# Docking-Box
-Docking Box plugin for PyMol
+# MAGI-Dock
+Docking plugin for PyMol
