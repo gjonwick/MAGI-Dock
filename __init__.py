@@ -24,8 +24,12 @@ import os
 import sys
 
 from src.ADContext import ADContext
-from src.Controllers.BoxAPI import BoxAPI
+from src.api.BoxAPI import BoxAPI
 from src.utils.util import dotdict
+
+from src.api.LigandAPI import *
+from src.api.ReceptorAPI import *
+from src.api.JobController import *
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from src.dependencies import *
@@ -432,16 +436,16 @@ def make_dialog():
         # TODO: add tooltips here
 
     # TODO: async
-    def generate_receptor():
+    def OnGenerateReceptorClicked():
         receptorController = ReceptorJobController(form, callbacks={'onReceptorAdded': onReceptorAdded})
         receptorController.generate()
 
     # TODO: async
-    def generate_flexible():
+    def OnGenerateFlexibleClicked():
         receptorController = ReceptorJobController(form)
         receptorController.flexible()
 
-    def prepare_ligands():
+    def OnPrepareLigandsClicked():
         ligandController = LigandJobController(form)
         ligandController.prepare()
 
@@ -508,7 +512,7 @@ def make_dialog():
         qDialog.close()
 
     # "button" callbacks
-    def onSelectReceptor(item):
+    def onSelectGeneratedReceptor(item):
         logging.info(f'Receptor {item.text()} selected')
         # adContext.receptor = adContext.receptors[item.text()]
         adContext.setReceptor(adContext.receptors[item.text()])
@@ -520,7 +524,7 @@ def make_dialog():
         adContext.setLigandToDock(adContext.ligands[item.text()])
         logging.info(f'Ligand to dock is: {adContext.ligand_to_dock.name} at {adContext.ligand_to_dock.pdbqt}')
 
-    def OnSelectRunDockingJob():
+    def OnRunDockingJob():
         selectedLigands = form.preparedLigands_lstw_2.selectedItems()
         for index, sele in enumerate(selectedLigands):
             ligand = adContext.ligands[sele.text()]
@@ -610,14 +614,14 @@ def make_dialog():
     form.browseReceptor_btn.clicked.connect(browse_receptors)
     form.browsePreparedLigand_btn.clicked.connect(browse_prepared_ligands)
     form.genBox_btn.clicked.connect(gen_box)
-    form.receptor_lstw.itemClicked.connect(onSelectReceptor)
+    form.receptor_lstw.itemClicked.connect(onSelectGeneratedReceptor)
     # form.preparedLigands_lstw_2.itemClicked.connect(onSelectLigandToDock)
     # form.addLigandToDock_btn.clicked.connect(onAddLigandToDock)
     # form.removeLigandToDock_btn.clicked.connect(onRemoveLigandToDock)
 
-    form.genReceptor_btn.clicked.connect(generate_receptor)
-    form.genFlexible_btn.clicked.connect(generate_flexible)
-    form.genLigands_btn.clicked.connect(prepare_ligands)
+    form.genReceptor_btn.clicked.connect(OnGenerateReceptorClicked)
+    form.genFlexible_btn.clicked.connect(OnGenerateFlexibleClicked)
+    form.genLigands_btn.clicked.connect(OnPrepareLigandsClicked)
 
     # form.sele_lstw_2.itemClicked(add_ligand)
     form.loadLigand_btn.clicked.connect(load_ligand)
@@ -626,7 +630,7 @@ def make_dialog():
     form.addLigand_btn.clicked.connect(add_ligand)
     form.loadLigand_btn.clicked.connect(load_ligand)
     form.loadReceptor_btn.clicked.connect(load_receptor)
-    form.runDocking_btn.clicked.connect(OnSelectRunDockingJob)
+    form.runDocking_btn.clicked.connect(OnRunDockingJob)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.fillBox_ch.stateChanged.connect(fill_unfill_Box)
