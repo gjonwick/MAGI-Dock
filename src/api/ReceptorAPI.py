@@ -1,19 +1,25 @@
 from src.ADContext import ADContext
 from pymol import cmd
 import os
-import logging
 from src.Entities.Receptor import Receptor
 from src.utils.util import dotdict
 from src.utils.util import *
+from src.log.Logger import *
+
 
 class ReceptorJobController:
 
     def __init__(self, form, callbacks=None):
         self.form = form
         self.callbacks = callbacks
+        self.logger = self._get_logger()
 
     def run(self):
         pass
+
+    def _get_logger(self):
+        logger_factory = LoggerFactory()
+        return logger_factory.giff_me_logger(name=__name__, level=logging.ERROR, destination=self.form.receptorLogBox)
 
     def generate(self):
         """ Generates pdbqt file for the receptor. """
@@ -23,7 +29,7 @@ class ReceptorJobController:
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
-            logging.error('You can only have 1 receptor!')
+            self.logger.error('You can only have 1 receptor!')
             return
 
         receptor_name = selection[0].text()
@@ -39,11 +45,11 @@ class ReceptorJobController:
         #     pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
-        logging.info(command)
+        self.logger.info(command)
 
         # result, output = getStatusOutput(command)
         result = 0
-        logging.info('Generating receptor ...')
+        self.logger.info('Generating receptor ...')
         # print(output)
 
         if result == 0:
@@ -52,12 +58,12 @@ class ReceptorJobController:
             receptor.pdbqt_location = outputfile
             adContext.addReceptor(receptor)
 
-            logging.info(f'Success!')
-            logging.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
+            self.logger.info(f'Success!')
+            self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
 
         else:
-            logging.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
-            # logging.error(output)
+            self.logger.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
+            #self.logger.error(output)
 
     def flexible(self):
         from pymol import stored
@@ -67,13 +73,14 @@ class ReceptorJobController:
         form = self.form
 
         sele = form.sele_lstw.selectedItems()
+        # TODO: make it a popup
         if len(sele) > 1:
             print('One selection at a time please!')
-            logging.error('One selection at a time please!')
+            self.logger.error('One selection at a time please!')
             return
 
         if adContext.receptor is None:
-            logging.error('Please generate the receptor first!')
+            self.logger.error('Please generate the receptor first!')
             return
 
         # TODO: encapsulate, get selected residues
@@ -96,17 +103,17 @@ class ReceptorJobController:
                 adContext.receptor)  # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
 
         res_string = adContext.receptor.flexibleResiduesAsString()
-        logging.info(res_string)
+        self.logger.info(res_string)
 
         WORK_DIR = os.getcwd()  # TODO: temporary
         prepare_receptor = 'prepare_flexreceptor.py'
         # receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
         receptor_pdbqt = adContext.receptor.pdbqt_location
 
-        logging.info(f'Generating flexible residues ... {res_string}')
+        self.logger.info(f'Generating flexible residues ... {res_string}')
 
         command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
-        logging.info(command)
+        self.logger.info(command)
 
         # result, output = getStatusOutput(command)
         result = 0
@@ -122,14 +129,14 @@ class ReceptorJobController:
             adContext.receptor.rigid_pdbqt = rigid_receptor
             adContext.receptor.flex_pdbqt = flex_receptor
 
-            # logging.debug(f'{output}')
+            # self.logger.debug(f'{output}')
             # for chain, contents in chains.items():
             #     for res in contents:
             #         form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
 
-            logging.info(f'Success generating flexible receptor with flexible residues {res_string}')
+            self.logger.info(f'Success generating flexible receptor with flexible residues {res_string}')
         else:
-            logging.error(
+            self.logger.error(
                 f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
 
         # form.flexRes_lstw.addItems(stored.flexible_residues)

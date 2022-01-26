@@ -31,6 +31,8 @@ from src.api.LigandAPI import *
 from src.api.ReceptorAPI import *
 from src.api.JobController import *
 
+from src.log.Logger import *
+
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 from src.dependencies import *
 
@@ -61,42 +63,6 @@ def getStatusOutput(command):
     return p.returncode, output
 
 
-# TODO: move this functions to utils
-
-class CustomLogger(logging.Handler):
-
-    def __init__(self, logBox) -> None:
-        super().__init__()
-        self.widget = logBox
-        self.widget.setReadOnly(True)
-
-    def emit(self, record):
-        msg = self.format(record)
-        self.widget.appendPlainText(msg)
-
-    def write(self, m):
-        pass
-
-
-# NOTE: test
-class pymolAPI:
-
-    def __init__(self) -> None:
-        pass
-
-    def load_cgo(self):
-        return
-
-    def save_selection(self):
-        return
-
-    def get_selection(self):
-        return
-
-    def get_boundaries(self):
-        return
-
-
 def __init_plugin__(app=None):
     """
     Add an entry to the PyMOL "Plugin" menu
@@ -124,49 +90,20 @@ def run_plugin_gui():
 
 def make_dialog():
     # entry point to PyMOL's API
-    #from pymol import stored
+    # from pymol import stored
 
     cmd.set("auto_zoom", "off")
 
     # pymol.Qt provides the PyQt5 interface, but may support PyQt4
     # and/or PySide as well
     from pymol.Qt import QtWidgets
-    from pymol.Qt import QtOpenGL
     from pymol.Qt import QtCore
     from pymol.Qt.utils import loadUi
     from pymol.Qt.utils import getSaveFileNameWithExt
 
-    class ViewPort(QtOpenGL.QGLWidget):
-        def __init__(self, parent=None):
-            QtOpenGL.QGLWidget.__init__(self, parent)
-            self.setMinimumSize(640, 480)
-
-        def paintGL(self):
-            QtOpenGL.glClear(QtOpenGL.GL_COLOR_BUFFER_BIT | QtOpenGL.GL_DEPTH_BUFFER_BIT)
-            QtOpenGL.glLoadIdentity()
-            QtOpenGL.glTranslatef(-2.5, 0.5, -6.0)
-            QtOpenGL.glColor3f(1.0, 1.5, 0.0)
-            QtOpenGL.glPolygonMode(QtOpenGL.GL_FRONT, QtOpenGL.GL_FILL)
-            QtOpenGL.glBegin(QtOpenGL.GL_TRIANGLES)
-            QtOpenGL.glVertex3f(2.0, -1.2, 0.0)
-            QtOpenGL.glVertex3f(2.6, 0.0, 0.0)
-            QtOpenGL.glVertex3f(2.9, -1.2, 0.0)
-            QtOpenGL.glEnd()
-            QtOpenGL.glFlush()
-
-        def initializeGL(self):
-            QtOpenGL.glClearDepth(1.0)
-            QtOpenGL.glDepthFunc(QtOpenGL.GL_LESS)
-            QtOpenGL.glEnable(QtOpenGL.GL_DEPTH_TEST)
-            QtOpenGL.glShadeModel(QtOpenGL.GL_SMOOTH)
-            QtOpenGL.glMatrixMode(QtOpenGL.GL_PROJECTION)
-            QtOpenGL.glLoadIdentity()
-            QtOpenGL.gluPerspective(45.0, 1.33, 0.1, 100.0)
-            QtOpenGL.glMatrixMode(QtOpenGL.GL_MODELVIEW)
-
     boxAPI = BoxAPI()
     adContext = ADContext()
-    # viewport = ViewPort()
+
     # create a new Window
     qDialog = QtWidgets.QDialog()
     saveTo = ''
@@ -177,20 +114,23 @@ def make_dialog():
     form = loadUi(uifile, qDialog)
 
     adContext.setForm(form)
+    logger = logging.getLogger(__name__)
 
-    logger = CustomLogger(form.plainTextEdit)
-    logger.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-    logging.getLogger().addHandler(logger)
-    logging.getLogger().setLevel(logging.INFO)
+    """ Multiple handlers can be created if you want to broadcast to many destinations. """
+    log_box_handler = CustomLoggingHandler(form.plainTextEdit)
+    log_box_handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
+
+    logger.addHandler(log_box_handler)
+    logger.setLevel(logging.DEBUG)
 
     def log_to_widget(m):
-        logging.info(m)
+        logger.info(m)
 
     def printRecChange():
         print(f'New receptor is{adContext.receptor.name}!')
 
     def onLoadedReceptorChanged():
-        logging.info("Updating flexible list and loadedReceptor ... ")
+        logger.info("Updating flexible list and loadedReceptor ... ")
         form.loadedReceptor_txt.setText(adContext.receptor.name)
         update_flexible_list()
 
@@ -207,7 +147,7 @@ def make_dialog():
         prepared_ligands_names = [lig_id for lig_id in adContext.ligands.keys() if
                                   adContext.ligands[lig_id].isPrepared()]
         for lig_id in adContext.ligands.keys():
-            logging.info(lig_id)
+            logger.info(lig_id)
 
         form.preparedLigands_lstw.addItems(prepared_ligands_names)
         form.preparedLigands_lstw_2.addItems(prepared_ligands_names)
@@ -239,16 +179,13 @@ def make_dialog():
         updateCenterGUI(boxData.center.x, boxData.center.y, boxData.center.z)
         updateDimGUI(boxData.dim.x, boxData.dim.y, boxData.dim.z)
 
-    def __broadcast():
-        return
-
     if boxAPI.box_exists():
         boxConfig = boxAPI.box_data()
         updateCenterGUI(boxConfig.center.x, boxConfig.center.y, boxConfig.center.z)
         updateDimGUI(boxConfig.dim.x, boxConfig.dim.y, boxConfig.dim.z)
 
     ########################## <Callbacks> #############################
-    # TODO: add increment step option
+
     def update():
         if boxAPI.box_exists():
             centerX = form.centerX.value()
@@ -285,7 +222,7 @@ def make_dialog():
         saveTo = filename
         vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
         boxAPI.save_box(filename, vinaout)
-        #adContext.config['box_path'] = filename
+        # adContext.config['box_path'] = filename
 
     def browse():
         # filename = getSaveFileNameWithExt(
@@ -370,13 +307,13 @@ def make_dialog():
         form.sele_lstw_2.clear()
         form.sele_lstw_2.addItems(selections)
 
-        logging.info('Selections imported!')
+        logger.info('Selections imported!')
 
     # ligand handler methods
 
     def add_ligand():
         selection = form.sele_lstw_2.selectedItems()
-        logging.debug(selection)
+        logger.debug(selection)
         for index, sele in enumerate(selection):
             ligand = Ligand(sele.text(), '', onPrepared=onPreparedLigandChange)
             adContext.addLigand(ligand)
@@ -388,7 +325,7 @@ def make_dialog():
         ligand_pdb_path = form.ligandPath_txt.text().strip()
 
         if ligand_pdb_path.split('.') == 'pdbqt':
-            logging.info(f'PDBQTs not accepted here!')
+            logger.error(f'PDBQTs not accepted here!')
             # return
 
         ligand_name = ligand_pdb_path.split('/')[-1].split('.')[0]
@@ -412,7 +349,7 @@ def make_dialog():
     def load_receptor():
         receptor_pdb_path = form.receptorPath_txt.text().strip()
         if receptor_pdb_path.split('.')[1] != 'pdbqt':
-            logging.info('The receptor must be in pdbqt format!')
+            logger.info('The receptor must be in pdbqt format!')
             # return
 
         receptor_name = receptor_pdb_path.split('/')[-1].split('.')[0]
@@ -435,12 +372,10 @@ def make_dialog():
         form.receptor_lstw.addItems(receptor_names)
         # TODO: add tooltips here
 
-    # TODO: async
     def OnGenerateReceptorClicked():
         receptorController = ReceptorJobController(form, callbacks={'onReceptorAdded': onReceptorAdded})
         receptorController.generate()
 
-    # TODO: async
     def OnGenerateFlexibleClicked():
         receptorController = ReceptorJobController(form)
         receptorController.flexible()
@@ -457,7 +392,7 @@ def make_dialog():
         form.worker.finished.connect(form.thread.quit)
         form.worker.finished.connect(form.worker.deleteLater)
         form.thread.finished.connect(form.thread.deleteLater)
-        form.worker.progress.connect(lambda: logging.info('Working ... '))
+        form.worker.progress.connect(lambda: logger.info('Working ... '))
 
         # start thread
         form.thread.start()
@@ -469,12 +404,10 @@ def make_dialog():
         )
 
         form.thread.finished.connect(
-            lambda: logging.info('Finish!')
+            lambda: logger.info('Finish!')
         )
 
-
     def run_docking_job_test():
-        adContext = ADContext()  # NOTE: DANGEROUS (ADContext not yet thread safe)
         box_path = adContext.config['box_path']
 
         receptor = adContext.receptor
@@ -513,7 +446,7 @@ def make_dialog():
 
     # "button" callbacks
     def onSelectGeneratedReceptor(item):
-        logging.info(f'Receptor {item.text()} selected')
+        logger.info(f'Receptor {item.text()} selected')
         # adContext.receptor = adContext.receptors[item.text()]
         adContext.setReceptor(adContext.receptors[item.text()])
         # adContext.setRecTest(adContext.receptors[item.text()])
@@ -522,7 +455,7 @@ def make_dialog():
     def onSelectLigandToDock(item):
         """ Sets ADContext ligand to dock (not useful right now, if multiple ligands supported) """
         adContext.setLigandToDock(adContext.ligands[item.text()])
-        logging.info(f'Ligand to dock is: {adContext.ligand_to_dock.name} at {adContext.ligand_to_dock.pdbqt}')
+        logger.info(f'Ligand to dock is: {adContext.ligand_to_dock.name} at {adContext.ligand_to_dock.pdbqt}')
 
     def OnRunDockingJob():
         selectedLigands = form.preparedLigands_lstw_2.selectedItems()
@@ -531,8 +464,6 @@ def make_dialog():
             adContext.ligands_to_dock[sele.text()] = ligand
 
         run_docking_job_test()
-
-
 
     def update_flexible_list():
         form.flexRes_lstw.clear()
@@ -555,7 +486,6 @@ def make_dialog():
         adContext.config['vinaPath'] = vinaPath
         adContext.config['configPath'] = configPath
 
-
     def OnBrowseADFRClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
             qDialog, 'Open', filter='All Files (*.*)'
@@ -563,7 +493,7 @@ def make_dialog():
         if filename != ('', ''):
             form.adfrPath_txt.setText(filename[0])
             adContext.config['adfr_path'] = filename[0]
-            logging.info(adContext.config['adfr_path'])
+            logger.info(adContext.config['adfr_path'])
 
     def OnBrowseMGLClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
@@ -572,7 +502,7 @@ def make_dialog():
         if filename != ('', ''):
             form.mglPath_txt.setText(filename[0])
             adContext.config['mgl_path'] = filename[0]
-            logging.info(adContext.config['mgl_path'])
+            logger.info(adContext.config['mgl_path'])
 
     def OnBrowseVinaClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
@@ -581,7 +511,7 @@ def make_dialog():
         if filename != ('', ''):
             form.vinaPath_txt.setText(filename[0])
             adContext.config['vina_path'] = filename[0]
-            logging.info(adContext.config['vina_path'])
+            logger.info(adContext.config['vina_path'])
 
     def OnBrowseConfigClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
@@ -591,7 +521,7 @@ def make_dialog():
         if filename != ('', ''):
             form.configPath_txt.setText(filename[0])
             adContext.config['box_path'] = filename[0]
-            logging.info(adContext.config['box_path'])
+            logger.info(adContext.config['box_path'])
 
     def dummy():
         pass

@@ -4,15 +4,21 @@ import os
 import logging
 from src.Entities.Ligand import Ligand
 from src.utils.util import *
+from src.log.Logger import LoggerFactory
 
 
 class LigandJobController:
 
     def __init__(self, form):
         self.form = form
+        self.logger = self._get_logger()
 
     def run(self):
         pass
+
+    def _get_logger(self):
+        logger_factory = LoggerFactory()
+        return logger_factory.giff_me_logger(name=__name__, level=logging.ERROR, destination=self.form.ligandLogBox)
 
     def add(self):
         pass
