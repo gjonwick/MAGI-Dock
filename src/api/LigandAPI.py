@@ -18,10 +18,33 @@ class LigandJobController:
 
     def _get_logger(self):
         logger_factory = LoggerFactory()
-        return logger_factory.giff_me_logger(name=__name__, level=logging.ERROR, destination=self.form.ligandLogBox)
+        return logger_factory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.ligandLogBox)
+
+    def load_ligand(self):
+        adContext = ADContext()
+        ligand_pdb_path = self.form.ligandPath_txt.text().strip()
+
+        if ligand_pdb_path.split('.') == 'pdbqt':
+            self.logger.error(f'PDBQTs not accepted here!')
+            # return
+
+        ligand_name = ligand_pdb_path.split('/')[-1].split('.')[0]
+
+        ligand = Ligand(ligand_name, ligand_pdb_path) # onPrepared=onPreparedLigandChange
+        ligand.fromPymol = False
+        adContext.addLigand(ligand)
+        cmd.load(ligand_pdb_path, object=ligand_name)
 
     def add(self):
-        pass
+        adContext = ADContext()
+        selected_ligands = self.form.sele_lstw_2.selectedItems()
+        self.logger.debug(f'Ligands to be added are: {selected_ligands}')
+        for index, sele in enumerate(selected_ligands):
+            ligand = Ligand(sele.text(), '') # onPrepared=onPreparedLigandChange
+            adContext.addLigand(ligand)
+
+        self.logger.debug(adContext.ligands)
+        self.form.sele_lstw_2.clearSelection()
 
     '''
        Generates pdbqt files for the ligands
@@ -33,6 +56,7 @@ class LigandJobController:
     # "button" callbacks TODO: use the ligand fromPymol flag to distinguish which ligand to choose (the one from the
     #  file, or the one from pymol)
     def prepare(self):
+        # TODO: when ligand is already prepared, what to do?
         adContext = ADContext()
         form = self.form
 
@@ -40,7 +64,7 @@ class LigandJobController:
         suffix = ''
         ligand_selection = form.ligands_lstw.selectedItems()
 
-        WORK_DIR = os.getcwd()  # TODO: temporary
+        WORK_DIR = os.getcwd()  # TODO: temporary Use while_in_dir contextmanager
 
         prep_command = 'prepare_ligand'
         if form.checkBox_hydrogens.isChecked():
@@ -49,8 +73,10 @@ class LigandJobController:
         for index, ligand_selection in enumerate(ligand_selection):
             ligand_name = ligand_selection.text()
             ligand = adContext.ligands[ligand_name]
+            self.logger.debug(f'Currently at ligand from ligand_lstw {ligand_name}')
             if ligand.fromPymol:
                 ligand_pdb = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdb')
+                self.logger.debug(f'Generating pdb {ligand_pdb} for ligand {ligand.name}')
                 ligand.pdb = ligand_pdb
                 try:
                     cmd.save(ligand_pdb, ligand_name)
@@ -68,7 +94,7 @@ class LigandJobController:
             result = 0
 
             if result == 0:
-                # logging.debug(output)
+                # self.logger.debug(output)
                 ligand.prepare()
                 # ligand.pdbqt = ligand_pdbqt
 
@@ -78,7 +104,7 @@ class LigandJobController:
                 form.preparedLigands_lstw_2.addItem(ligand.name)
                 '''
 
-                logging.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
+                self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
             else:
-                logging.info(f'An error occurred while trying to prepare the ligand ...')
-                # logging.info(output)
+                self.logger.info(f'An error occurred while trying to prepare the ligand ...')
+                # self.logger.info(output)

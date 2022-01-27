@@ -19,7 +19,7 @@ class ReceptorJobController:
 
     def _get_logger(self):
         logger_factory = LoggerFactory()
-        return logger_factory.giff_me_logger(name=__name__, level=logging.ERROR, destination=self.form.receptorLogBox)
+        return logger_factory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.receptorLogBox)
 
     def generate(self):
         """ Generates pdbqt file for the receptor. """
@@ -45,11 +45,12 @@ class ReceptorJobController:
         #     pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
-        self.logger.info(command)
-
+        #self.logger.info(command)
+        print(command)
         # result, output = getStatusOutput(command)
         result = 0
-        self.logger.info('Generating receptor ...')
+        #self.logger.info('Generating receptor ...')
+        print('Generating receptor')
         # print(output)
 
         if result == 0:
@@ -58,7 +59,7 @@ class ReceptorJobController:
             receptor.pdbqt_location = outputfile
             adContext.addReceptor(receptor)
 
-            self.logger.info(f'Success!')
+            #self.logger.info(f'Success!')
             self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
 
         else:
@@ -87,7 +88,7 @@ class ReceptorJobController:
         sele = sele[0].text()
         stored.flexible_residues = []
         cmd.iterate(sele + ' and name ca', 'stored.flexible_residues.append([chain, resn, resi])')
-        print(str(stored.flexible_residues))
+        #print(str(stored.flexible_residues))
         chains = {}
         for chain, resn, resi in stored.flexible_residues:
             if resn not in ['ALA', 'GLY', 'PRO']:
@@ -103,7 +104,7 @@ class ReceptorJobController:
                 adContext.receptor)  # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
 
         res_string = adContext.receptor.flexibleResiduesAsString()
-        self.logger.info(res_string)
+        #self.logger.info(res_string)
 
         WORK_DIR = os.getcwd()  # TODO: temporary
         prepare_receptor = 'prepare_flexreceptor.py'
@@ -111,10 +112,11 @@ class ReceptorJobController:
         receptor_pdbqt = adContext.receptor.pdbqt_location
 
         self.logger.info(f'Generating flexible residues ... {res_string}')
+        print(f'Generating flexible residues ... {res_string}')
 
         command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
         self.logger.info(command)
-
+        print(command)
         # result, output = getStatusOutput(command)
         result = 0
         # print(output)
@@ -135,6 +137,7 @@ class ReceptorJobController:
             #         form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
 
             self.logger.info(f'Success generating flexible receptor with flexible residues {res_string}')
+            print(f'Success generating flexible receptor with flexible residues {res_string}')
         else:
             self.logger.error(
                 f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')

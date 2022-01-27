@@ -2,6 +2,10 @@
 
 import os
 
+class AutoDockComand():
+
+    def __init__(self):
+        pass
 
 class AutoDock:
 

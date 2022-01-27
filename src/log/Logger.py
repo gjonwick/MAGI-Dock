@@ -1,7 +1,7 @@
 import logging
 
 
-class CustomLoggingHandler(logging.Handler):
+class CustomWidgetLoggingHandler(logging.Handler):
 
     def __init__(self, logBox) -> None:
         super().__init__()
@@ -25,17 +25,26 @@ class LoggerFactory:
         name = kwargs.pop('name', False)
         level = kwargs.pop('level', False)
         destination = kwargs.pop('destination', False)
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+        self._clear_handlers(self, logger)
 
         log_handler = self._get_handler(destination)
-
-        logger = logging.getLogger(name)
         logger.addHandler(log_handler)
-        logger.setLevel(level)
 
         return logger
 
+    """NOTE: since currently new instances of Ligand and Receptors controllers are created for each action on ligands 
+    or receptors, giff_me_logger is called multiple times, each time adding a handler to the logger with the same 
+    name (probably a logger is saved somewhere in the cache during runtime and is accessed multiple times attaching a 
+    new handler to it, thus logging n+1 times. This method make sure to clear all previous handlers. """
+    #  TODO: find a better way to handle this.
+    def _clear_handlers(self, logger):
+        for h in logger.handlers:
+            logger.removeHandler(h)
+
     def _get_handler(self, destination):
-        log_handler = CustomLoggingHandler(destination)
+        log_handler = CustomWidgetLoggingHandler(destination)
         log_handler.setFormatter(logging.Formatter(self.formatter))
 
         return log_handler

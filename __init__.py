@@ -12,7 +12,6 @@ the additional features of PyQt5.
 # TODO: Fill the receptor and flexible residues lists before running the generation
 # then the user should be able to choose between receptors and flexibles
 
-# TODO: observer pattern, to broadcast the state of the box to every textfield
 
 from __future__ import absolute_import
 from __future__ import print_function
@@ -23,32 +22,34 @@ from __future__ import print_function
 import os
 import sys
 
-from src.ADContext import ADContext
-from src.api.BoxAPI import BoxAPI
-from src.utils.util import dotdict
+sys.path.append(os.path.join(os.path.dirname(__file__)))
 
-from src.api.LigandAPI import *
-from src.api.ReceptorAPI import *
+print(sys.path)
+
+
+from src.Entities.Ligand import Ligand
+from src.Entities.Receptor import Receptor
+
+# from src.ADContext import ADContext
+from src.api.BoxAPI import BoxAPI
+
+# from src.utils.util import dotdict
+
+from src.api.LigandAPI import LigandJobController
+from src.api.ReceptorAPI import ReceptorJobController
 from src.api.JobController import *
 
 from src.log.Logger import *
 
-sys.path.append(os.path.join(os.path.dirname(__file__)))
 from src.dependencies import *
 
 print(TESTIMPORT)
-import logging
+
 from pymol.cgo import *
 from pymol import cmd
 
 MODULE_UNLOADED = False
 WORK_DIR = os.getcwd()
-
-CONFIG = dotdict({
-    'vina_path': None,
-    'autodock_path': None,
-    'box_path': None
-})
 
 
 def getStatusOutput(command):
@@ -114,10 +115,11 @@ def make_dialog():
     form = loadUi(uifile, qDialog)
 
     adContext.setForm(form)
+
     logger = logging.getLogger(__name__)
 
     """ Multiple handlers can be created if you want to broadcast to many destinations. """
-    log_box_handler = CustomLoggingHandler(form.plainTextEdit)
+    log_box_handler = CustomWidgetLoggingHandler(form.plainTextEdit)
     log_box_handler.setFormatter(logging.Formatter('%(name)s - %(levelname)s - %(message)s'))
 
     logger.addHandler(log_box_handler)
@@ -138,7 +140,7 @@ def make_dialog():
         form.ligands_lstw.clear()
         ligand_names = [lig_id for lig_id in adContext.ligands.keys()]
         form.ligands_lstw.addItems(ligand_names)
-        onPreparedLigandChange()
+        # onPreparedLigandChange()
 
     def onPreparedLigandChange():
 
@@ -146,8 +148,9 @@ def make_dialog():
         form.preparedLigands_lstw_2.clear()
         prepared_ligands_names = [lig_id for lig_id in adContext.ligands.keys() if
                                   adContext.ligands[lig_id].isPrepared()]
-        for lig_id in adContext.ligands.keys():
-            logger.info(lig_id)
+
+        logger.info(
+            f'onPreparedLigandChange() talking: List of prepared_ligands as observed by me is {prepared_ligands_names}')
 
         form.preparedLigands_lstw.addItems(prepared_ligands_names)
         form.preparedLigands_lstw_2.addItems(prepared_ligands_names)
@@ -311,14 +314,14 @@ def make_dialog():
 
     # ligand handler methods
 
-    def add_ligand():
-        selection = form.sele_lstw_2.selectedItems()
-        logger.debug(selection)
-        for index, sele in enumerate(selection):
+    def OnAddLigandClicked():
+        selected_ligands = form.sele_lstw_2.selectedItems()
+        logger.debug(f'Ligands to be added are: {selected_ligands}')
+        for index, sele in enumerate(selected_ligands):
             ligand = Ligand(sele.text(), '', onPrepared=onPreparedLigandChange)
             adContext.addLigand(ligand)
 
-        print(adContext.ligands)
+        logger.debug(adContext.ligands)
         form.sele_lstw_2.clearSelection()
 
     def load_ligand():
@@ -557,7 +560,7 @@ def make_dialog():
     form.loadLigand_btn.clicked.connect(load_ligand)
     form.loadPreparedLigand_btn.clicked.connect(load_prepared_ligand)
     form.removeLigand_btn.clicked.connect(remove_ligand)
-    form.addLigand_btn.clicked.connect(add_ligand)
+    form.addLigand_btn.clicked.connect(OnAddLigandClicked)
     form.loadLigand_btn.clicked.connect(load_ligand)
     form.loadReceptor_btn.clicked.connect(load_receptor)
     form.runDocking_btn.clicked.connect(OnRunDockingJob)
@@ -576,6 +579,3 @@ def make_dialog():
     form.saveConfig_btn.clicked.connect(saveConfig)
 
     return qDialog
-
-
-actions = {}

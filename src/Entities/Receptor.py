@@ -1,4 +1,3 @@
-
 import os
 
 """
@@ -49,6 +48,12 @@ class Receptor:
 
         final_str = ','.join(chains)
 
-        #logging.info(final_str)
+        # logging.info(final_str)
         # NOTE: should return final_string
         return full_res_string
+
+    def __repr__(self):
+        pdbqt_location = 'No PDBQT' if self.pdbqt_location is None else self.pdbqt_location
+        rigid_pdbqt = 'No rigidPDBQT' if self.rigid_pdbqt is None else self.rigid_pdbqt
+        flex_pdbqt = 'No flexPDBQT' if self.flex_pdbqt is None else self.flex_pdbqt
+        return f'Receptor(name={self.name}, pdbqt={pdbqt_location}, rigid={rigid_pdbqt}, flex={flex_pdbqt})'
