@@ -1,4 +1,4 @@
-from utils.util import dotdict
+from src.utils.util import dotdict
 
 
 def add_to(destination, item):

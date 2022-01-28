@@ -1,6 +1,6 @@
-from Models.Box import Box
-from utils.vec3 import vec3
-from utils.util import dotdict
+from src.Entities.Box import Box
+from src.utils.vec3 import vec3
+from src.utils.util import dotdict
 from pymol import cmd
 
 

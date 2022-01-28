@@ -1,2 +1,4 @@
-# Docking-Box
-Docking Box plugin for PyMol
+# MAGI-Dock
+Docking plugin for PyMol
+
+Molecular docking simulation of small molecule drugs to macromolecules is a valuable tool in structural biology and medicinal chemistry research, also thanks to many available free resources. Like many open-source programs in the field, free docking softwares rely on a command-line interface, and steps that require interaction with molecular structures by making use of external graphics software, which are often limited in number and very specific. In addition, such features usually need a re-training of the staff, which may hamper the usage, especially in a company environment. MAGI-Dock is a graphical user interface that brings together the power of Autodock Vina and PyMOL. It comes as a free PyMOL plugin that assists the user along the docking workflow, focusing on docking box set-up.
