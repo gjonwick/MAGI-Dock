@@ -10,9 +10,11 @@ def touch(filename):
 
 def getStatusOutput(command):
     from subprocess import Popen, PIPE, STDOUT
+    import os
+    import sys
     env = dict(os.environ)
     args = command.split()
-    if args[0].endswith('.py') and MODULE_UNLOADED:
+    if args[0].endswith('.py'):
         args.insert(0, sys.executable)
     p = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE, env=env)
     print(args)

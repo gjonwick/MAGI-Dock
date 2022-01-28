@@ -48,7 +48,7 @@ def getStatusOutput(command):
     from subprocess import Popen, PIPE, STDOUT
     env = dict(os.environ)
     args = command.split()
-    if args[0].endswith('.py') and MODULE_UNLOADED:
+    if args[0].endswith('.py'):
         args.insert(0, sys.executable)
     p = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE, env=env)
     print(args)
@@ -526,7 +526,7 @@ def make_dialog():
             ligand = adContext.ligands[sele.text()]
             adContext.ligands_to_dock[sele.text()] = ligand
 
-        run_docking_job_test()
+        run_docking_job()
 
 
 
@@ -589,6 +589,9 @@ def make_dialog():
             adContext.config['box_path'] = filename[0]
             logging.info(adContext.config['box_path'])
 
+    def OnExhaustChange():
+        adContext.config['dockingjob_params']['exhaustiveness'] = float(form.exhaust_txt.text())
+
     def dummy():
         pass
 
@@ -633,6 +636,8 @@ def make_dialog():
 
     form.importSele_btn.clicked.connect(import_sele)
     form.close_btn.clicked.connect(onCloseWindow)
+
+    form.exhaust_txt.textChanged.connect(OnExhaustChange)
 
     form.browseADFR_btn.clicked.connect(OnBrowseADFRClicked)
     form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)

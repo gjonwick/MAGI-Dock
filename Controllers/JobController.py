@@ -9,13 +9,12 @@ from Models.ADContext import ADContext
 from Models.Ligand import Ligand
 from Models.Receptor import Receptor
 
-from utils.util import dotdict
+from utils.util import dotdict, getStatusOutput
 
 from subprocess import Popen, PIPE, STDOUT
 import logging
 import os
 from pymol import cmd
-
 
 class ReceptorJobController:
 
@@ -44,18 +43,18 @@ class ReceptorJobController:
         receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdb')
         outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdbqt')
 
-        # try:
-        #     cmd.save(receptor_path, receptor)
-        # except cmd.QuietException:
-        #     pass
+        try:
+            cmd.save(receptor_path, receptor_name)
+        except cmd.QuietException:
+            pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
         logging.info(command)
 
-        # result, output = getStatusOutput(command)
-        result = 0
+        result, output = getStatusOutput(command)
+        #result = 0
         logging.info('Generating receptor ...')
-        # print(output)
+        print(output)
 
         if result == 0:
             receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
@@ -119,8 +118,8 @@ class ReceptorJobController:
         command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
         logging.info(command)
 
-        # result, output = getStatusOutput(command)
-        result = 0
+        result, output = getStatusOutput(command)
+        # result = 0
         # print(output)
 
         if result == 0:
@@ -197,8 +196,8 @@ class LigandJobController:
 
             command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
 
-            # result, output = getStatusOutput(command)
-            result = 0
+            result, output = getStatusOutput(command)
+            #result = 0
 
             if result == 0:
                 # logging.debug(output)
@@ -231,6 +230,8 @@ class VinaWorker(QtCore.QObject):
 
         box_path = adContext.config['box_path']
         vina_path = adContext.config['vina_path']
+        dockingjob_params = adContext.config['dockingjob_params']
+        exhaustiveness = dockingjob_params['exhaustiveness']
 
 
         receptor = adContext.receptor
@@ -245,7 +246,8 @@ class VinaWorker(QtCore.QObject):
             sample_command = f'vina --receptor {rigid_receptor} \
                                    --flex {flex_receptor} --ligand {ligand_to_dock.pdbqt} \
                                    --config {box_path} \
-                                   --exhaustiveness 32 --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
+                                   --exhaustiveness {exhaustiveness} --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
+
         else:
             # batch dock
             pass
@@ -270,7 +272,7 @@ class VinaWorker(QtCore.QObject):
         # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
         # p.stdout.close()
 
-        # (out, err) = p.communicate()
+        (out, err) = p.communicate()
         logging.info(sample_command)
 
         self.finished.emit()
