@@ -50,6 +50,20 @@ def execute_command(command):
     return p.returncode, output
 
 
+def getStatusOutput(command):
+    MODULE_UNLOADED = False
+    from subprocess import Popen, PIPE, STDOUT
+    import os, sys
+    env = dict(os.environ)
+    args = command.split()
+    if args[0].endswith('.py') and MODULE_UNLOADED:
+        args.insert(0, sys.executable)
+    p = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE, env=env)
+    print(args)
+    output = p.communicate()[0]
+    return p.returncode, output
+
+
 class dotdict(dict):
     """ Convenient class to represent dictionaries in a dotted format """
     __getattr__ = dict.get

@@ -1,5 +1,5 @@
 # TODO: make it thread safe!
-
+import os
 """
 ADContext knows everything!!!
 Think of it as a type of registry (hence, the singleton).
@@ -34,7 +34,7 @@ class ADContext:
             self._ligand_callbacks = []
             self._ligandondock_callbacks = []
             self.config = {'vina_path': None, 'adfr_path': None, 'mgl_path': None, 'box_path': None, 'dockingjob_params': {
-                'exhaustiveness': 32, 'n_poses': 9, 'min_rmsd': 1.0, 'max_evals': 0}}
+                'exhaustiveness': 32, 'n_poses': 9, 'min_rmsd': 1.0, 'max_evals': 0}, 'working_dir': os.getcwd()}
             self.ligand_to_dock = None
 
         def getReceptor(self):

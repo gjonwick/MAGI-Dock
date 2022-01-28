@@ -52,18 +52,6 @@ MODULE_UNLOADED = False
 WORK_DIR = os.getcwd()
 
 
-def getStatusOutput(command):
-    from subprocess import Popen, PIPE, STDOUT
-    env = dict(os.environ)
-    args = command.split()
-    if args[0].endswith('.py') and MODULE_UNLOADED:
-        args.insert(0, sys.executable)
-    p = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE, env=env)
-    print(args)
-    output = p.communicate()[0]
-    return p.returncode, output
-
-
 def __init_plugin__(app=None):
     """
     Add an entry to the PyMOL "Plugin" menu

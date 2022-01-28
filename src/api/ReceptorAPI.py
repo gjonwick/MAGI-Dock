@@ -5,6 +5,7 @@ from src.Entities.Receptor import Receptor
 from src.utils.util import dotdict
 from src.utils.util import *
 from src.log.Logger import *
+from src.ad import ad
 
 
 class ReceptorJobController:
@@ -45,26 +46,23 @@ class ReceptorJobController:
         #     pass
 
         command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
-        #self.logger.info(command)
-        print(command)
+        # self.logger.info(command)
+        # self.logger.debug(command)
         # result, output = getStatusOutput(command)
         result = 0
-        #self.logger.info('Generating receptor ...')
-        print('Generating receptor')
-        # print(output)
-
-        if result == 0:
-            receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
-            receptor.name = receptor_name
-            receptor.pdbqt_location = outputfile
-            adContext.addReceptor(receptor)
-
-            #self.logger.info(f'Success!')
-            self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
-
-        else:
-            self.logger.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
-            #self.logger.error(output)
+        # print('Generating receptor ...')
+        self.logger.debug('Trying ad module!')
+        result = ad.prepare_receptor(r=receptor_path, o=outputfile, A='checkhydrogens')()
+        rc = result[0]
+        self.logger.debug(result)
+        # if rc == 2:
+        #     receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
+        #     receptor.name = receptor_name
+        #     receptor.pdbqt_location = outputfile
+        #     adContext.addReceptor(receptor)
+        #     self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
+        # else:
+        #     self.logger.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
 
     def flexible(self):
         from pymol import stored
@@ -88,7 +86,7 @@ class ReceptorJobController:
         sele = sele[0].text()
         stored.flexible_residues = []
         cmd.iterate(sele + ' and name ca', 'stored.flexible_residues.append([chain, resn, resi])')
-        #print(str(stored.flexible_residues))
+        # print(str(stored.flexible_residues))
         chains = {}
         for chain, resn, resi in stored.flexible_residues:
             if resn not in ['ALA', 'GLY', 'PRO']:
@@ -104,7 +102,7 @@ class ReceptorJobController:
                 adContext.receptor)  # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
 
         res_string = adContext.receptor.flexibleResiduesAsString()
-        #self.logger.info(res_string)
+        # self.logger.info(res_string)
 
         WORK_DIR = os.getcwd()  # TODO: temporary
         prepare_receptor = 'prepare_flexreceptor.py'
@@ -116,7 +114,7 @@ class ReceptorJobController:
 
         command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
         self.logger.info(command)
-        print(command)
+
         # result, output = getStatusOutput(command)
         result = 0
         # print(output)

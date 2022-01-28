@@ -5,6 +5,7 @@ import logging
 from src.Entities.Ligand import Ligand
 from src.utils.util import *
 from src.log.Logger import LoggerFactory
+from src.decorators import *
 
 
 class LigandJobController:
@@ -30,7 +31,7 @@ class LigandJobController:
 
         ligand_name = ligand_pdb_path.split('/')[-1].split('.')[0]
 
-        ligand = Ligand(ligand_name, ligand_pdb_path) # onPrepared=onPreparedLigandChange
+        ligand = Ligand(ligand_name, ligand_pdb_path)  # onPrepared=onPreparedLigandChange
         ligand.fromPymol = False
         adContext.addLigand(ligand)
         cmd.load(ligand_pdb_path, object=ligand_name)
@@ -40,7 +41,7 @@ class LigandJobController:
         selected_ligands = self.form.sele_lstw_2.selectedItems()
         self.logger.debug(f'Ligands to be added are: {selected_ligands}')
         for index, sele in enumerate(selected_ligands):
-            ligand = Ligand(sele.text(), '') # onPrepared=onPreparedLigandChange
+            ligand = Ligand(sele.text(), '')  # onPrepared=onPreparedLigandChange
             adContext.addLigand(ligand)
 
         self.logger.debug(adContext.ligands)
@@ -55,16 +56,18 @@ class LigandJobController:
 
     # "button" callbacks TODO: use the ligand fromPymol flag to distinguish which ligand to choose (the one from the
     #  file, or the one from pymol)
+    # @info_logger
     def prepare(self):
         # TODO: when ligand is already prepared, what to do?
         adContext = ADContext()
         form = self.form
+        WORK_DIR = ADContext.config.pop('working_dir', False)
+        if not WORK_DIR:
+            WORK_DIR = os.getcwd()
 
         SUCCESS_FLAG = True
         suffix = ''
         ligand_selection = form.ligands_lstw.selectedItems()
-
-        WORK_DIR = os.getcwd()  # TODO: temporary Use while_in_dir contextmanager
 
         prep_command = 'prepare_ligand'
         if form.checkBox_hydrogens.isChecked():
@@ -89,6 +92,8 @@ class LigandJobController:
             ligand.pdbqt = ligand_pdbqt
 
             command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
+            # TODO: should look something like: command = ad.prepare_ligand(l=ligand_pdb, o=ligand_pdbqt)
+            # result should be handled by the command wrapper, not here
 
             # result, output = getStatusOutput(command)
             result = 0

@@ -21,13 +21,25 @@ class LoggerFactory:
     def __init__(self, formatter='%(name)s - %(levelname)s - %(message)s'):
         self.formatter = formatter
 
+    def giff_me_file_logger(self, **kwargs):
+        logger = logging.getLogger(kwargs.pop('name'))
+        logger.setLevel(kwargs.pop('level'))
+        self._clear_handlers(logger)
+        file_handler = logging.FileHandler('testing_logs.log')
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(logging.Formatter('%(levelname)s:%(name)s:%(message)s'))
+
+        logger.addHandler(file_handler)
+
+        return logger
+
     def giff_me_logger(self, **kwargs):
         name = kwargs.pop('name', False)
         level = kwargs.pop('level', False)
         destination = kwargs.pop('destination', False)
         logger = logging.getLogger(name)
         logger.setLevel(level)
-        self._clear_handlers(self, logger)
+        self._clear_handlers(logger)
 
         log_handler = self._get_handler(destination)
         logger.addHandler(log_handler)
