@@ -1,6 +1,5 @@
 import subprocess
 import sys
-from src.decorators import *
 
 
 class CustomCommand(object):
@@ -44,7 +43,7 @@ class CustomCommand(object):
         return _args, _kwargs
 
     def _run_command(self, *args, **kwargs):
-        #print(f'Inside _run_command; args = {args}; kwargs = {kwargs}')
+        # print(f'Inside _run_command; args = {args}; kwargs = {kwargs}')
 
         # TODO: add code to handle the case where we want to use PIPE as input (to be discussed)
 
@@ -81,7 +80,6 @@ class CustomCommand(object):
     Command_name is given during class (tool) creation in tools.py 
     '''
 
-    @debug_logger
     def _commandline(self, *args, **kwargs):
         print("Inside _commandline; before preparing args!")
         print(f'Inside _commandline; command = {[self.command_name] + self.prepare_args(*args, **kwargs)}')
@@ -134,7 +132,7 @@ class PopenWithInput(subprocess.Popen):
     def __init__(self, *args, **kwargs):
         self.command = args[0]
 
-        super(PopenWithInput, self).__init__(*args, **kwargs)
+        super(PopenWithInput, self).__init__(*args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
 def create_tool(tool_name, command_name, driver=None):
@@ -144,31 +142,3 @@ def create_tool(tool_name, command_name, driver=None):
     }
     tool = type(tool_name, (CustomCommand,), tool_dict)
     return tool
-
-
-# class Vina:
-#
-#     command_list = ['set_receptor', 'set_ligand_from_file', 'set_ligand_from_string', 'set_weights', 'compute_vina_maps',
-#                     'load_maps', 'write_maps', 'write_pose', 'write_poses', 'poses', 'energies', 'randomize', 'score',
-#                     'optimize', 'dock']
-#
-#     def __init__(self, sf_name='vina', cpu=0, seed=0, no_refine=False, verbosity=1):
-#         self.sf_name = sf_name
-#         self.cpu = cpu
-#         self.seed = seed
-#         self.no_refine = no_refine
-#         self.verbosity = verbosity
-#         self.__dict__.update(self.load_vina_commands())
-#
-#     def __str__(self):
-#         pass
-#
-#     def load_vina_commands(self):
-#         tools = {}
-#         for command_name in self.command_list:
-#             tools[command_name] = create_tool(command_name.upper(), command_name, 'vina')()
-#
-#         return tools
-#
-# vina = Vina()
-# vina.dock()

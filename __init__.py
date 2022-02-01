@@ -35,7 +35,7 @@ from src.api.BoxAPI import BoxAPI
 
 # from src.utils.util import dotdict
 
-from src.api.LigandAPI import LigandJobController
+from .src.api.LigandAPI import LigandJobController
 from src.api.ReceptorAPI import ReceptorJobController
 from src.api.JobController import *
 
@@ -477,6 +477,7 @@ def make_dialog():
         adContext.config['vinaPath'] = vinaPath
         adContext.config['configPath'] = configPath
 
+    # TODO: make them accept directory paths, not only files
     def OnBrowseADFRClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
             qDialog, 'Open', filter='All Files (*.*)'
@@ -487,13 +488,16 @@ def make_dialog():
             logger.info(adContext.config['adfr_path'])
 
     def OnBrowseMGLClicked():
-        filename = QtWidgets.QFileDialog.getOpenFileName(
-            qDialog, 'Open', filter='All Files (*.*)'
-        )
-        if filename != ('', ''):
-            form.mglPath_txt.setText(filename[0])
-            adContext.config['mgl_path'] = filename[0]
-            logger.info(adContext.config['mgl_path'])
+        # filename = QtWidgets.QFileDialog.getOpenFileName(
+        #     qDialog, 'Open', filter='All Files (*.*)'
+        # )
+        filename = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        adContext.config['mgl_path'] = filename
+        logger.info(f'mgl_path = {filename}')
+        # if filename != ('', ''):
+        #     form.mglPath_txt.setText(filename[0])
+        #     adContext.config['mgl_path'] = filename[0]
+        #     logger.info(adContext.config['mgl_path'])
 
     def OnBrowseVinaClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
