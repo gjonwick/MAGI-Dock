@@ -2,7 +2,6 @@ from src.ADContext import ADContext
 from pymol import cmd
 import os
 from src.Entities.Receptor import Receptor
-from src.utils.util import dotdict
 from src.utils.util import *
 from src.log.Logger import *
 from src.ad import AutoDock

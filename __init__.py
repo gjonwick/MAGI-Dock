@@ -42,10 +42,6 @@ from src.api.JobController import *
 
 from src.log.Logger import *
 
-from src.dependencies import *
-
-print(TESTIMPORT)
-
 from pymol.cgo import *
 from pymol import cmd
 
