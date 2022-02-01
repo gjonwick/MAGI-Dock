@@ -63,6 +63,36 @@ def getStatusOutput(command):
     output = p.communicate()[0]
     return p.returncode, output
 
+""" Helper code to deal with environment modules. """
+
+def loaded_modules():
+    return os.environ['LOADEDMODULES'].split(':')
+
+def module_loaded(module_name):
+    """ Checks if a module (as in CentOS modules) is loaded. """
+    # lsmod_proc = subprocess.Popen(['module list'], stdout=subprocess.PIPE)
+    # gerp_proc = subprocess.Popen(['grep', module], stdin=lsmod_proc.stdout)
+    # grep_proc.communicate()
+    # return grep_proc.returncode == 0
+
+    lmods = loaded_modules()
+    flag = False
+    for module in lmods:
+        if module_name.lower() in module.lower():
+            flag = True
+            break
+
+    return flag
+
+def find_executables(path):
+    execs = []
+    for exe in os.listdir(path):
+        full_exe_path = os.path.join(path, exe)
+        if (os.access(full_exe_path, os.X_OK)) and not os.path.isdir(fullexe):
+            execs.append(exe)
+        
+    return execs
+
 
 class dotdict(dict):
     """ Convenient class to represent dictionaries in a dotted format """

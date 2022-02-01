@@ -1,6 +1,7 @@
 # TODO: make it thread safe!
 import os
 from src.CommandWrapper import *
+from src.utils.util import *
 
 """
 ADContext knows everything!!!
@@ -49,7 +50,7 @@ class ADContext:
 
         def load_ad_tools(self):
             tools = {}
-            AD_MODULE_LOADED = True
+            AD_MODULE_LOADED = module_loaded('ADFRsuite') and module_loaded('mgltools')
 
             if not AD_MODULE_LOADED:
                 if self.config['mgl_path'] is None:

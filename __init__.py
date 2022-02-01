@@ -23,6 +23,7 @@ import os
 import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__)))
+sys.path.append('.')
 
 print(sys.path)
 
@@ -35,7 +36,7 @@ from src.api.BoxAPI import BoxAPI
 
 # from src.utils.util import dotdict
 
-from .src.api.LigandAPI import LigandJobController
+from src.api.LigandAPI import LigandJobController
 from src.api.ReceptorAPI import ReceptorJobController
 from src.api.JobController import *
 
@@ -521,8 +522,12 @@ def make_dialog():
     def OnExhaustChange():
         adContext.config['dockingjob_params']['exhaustiveness'] = float(form.exhaust_txt.text())
 
-    def dummy():
+
+    def OnShellCommand():
         pass
+
+    def dummy():
+        logger.debug('Callback works!')
 
     ########################## </Callbacks> #############################
 
@@ -574,5 +579,8 @@ def make_dialog():
     form.browseConfig_btn.clicked.connect(OnBrowseConfigClicked)
 
     form.saveConfig_btn.clicked.connect(saveConfig)
+
+    form.shellInput_txt.returnPressed.connect(dummy)
+
 
     return qDialog
