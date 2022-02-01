@@ -1,5 +1,7 @@
 # TODO: make it thread safe!
 import os
+from src.CommandWrapper import *
+
 """
 ADContext knows everything!!!
 Think of it as a type of registry (hence, the singleton).
@@ -7,18 +9,16 @@ Think of it as a type of registry (hence, the singleton).
 ADContext doesn't know how you generated receptors, or how you prepared the ligands, another piece of code
 is responsible for that, but however, ADContext is always notified if a receptor was generated or not.
 This poses a new threat; if you decide to run the generation, preparation, etc. steps (in general, any process
-for which ADContext will be notified) in seperate threads, synchronyzation problems may arise. In this approach,
+for which ADContext will be notified) in separate threads, synchronization problems may arise. In this approach,
 ADContext is a singleton, and it should be made thread safe so whenever a thread wants to access the vinaInstance,
 it must do so in a "safe" way.
 
 If you generated a receptor, ADContext will know it!
 If you prepared a ligand, ADContext will know it!
 
-    attributes:
-        receptor/receptors - an instance holding the receptor/receptors currently initiated by the user
-        ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both receptors and ligands as they wish)
-    XXX:form - XXX:not needed
-"""
+    attributes: receptor/receptors - an instance holding the receptor/receptors currently initiated by the user 
+    ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both 
+    receptors and ligands as they wish) XXX:form - XXX:not needed """
 
 
 class ADContext:
@@ -33,9 +33,45 @@ class ADContext:
             self._callbacks = []
             self._ligand_callbacks = []
             self._ligandondock_callbacks = []
-            self.config = {'vina_path': None, 'adfr_path': None, 'mgl_path': None, 'box_path': None, 'dockingjob_params': {
-                'exhaustiveness': 32, 'n_poses': 9, 'min_rmsd': 1.0, 'max_evals': 0}, 'working_dir': os.getcwd()}
+            self.ad_tools_loaded = False
+            self.config = {'vina_path': None, 'adfr_path': None, 'mgl_path': None, 'box_path': None,
+                           'dockingjob_params': {
+                               'exhaustiveness': 32,
+                               'n_poses': 9,
+                               'min_rmsd': 1.0,
+                               'max_evals': 0},
+                           'working_dir': os.getcwd()}
             self.ligand_to_dock = None
+            self.ad_command_list = ['prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
+
+        """ Maybe get rid of ad and vina classes, and init everything here? Either way, you can just export this code
+            to a separate class. """
+
+        def load_ad_tools(self):
+            tools = {}
+            AD_MODULE_LOADED = True
+
+            if not AD_MODULE_LOADED:
+                if self.config['mgl_path'] is None:
+                    print('ADContext here: mgl_path not specified, returning')
+                    return None
+
+            for command_name in self.ad_command_list:
+                if not AD_MODULE_LOADED:
+                    if command_name[-3:] == '.py':
+                        full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
+                                                    command_name)
+                    else:
+                        full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
+                                                    command_name + '.py')
+                else:
+                    full_command = command_name
+
+                tools[command_name] = create_tool(command_name.upper(), full_command, 'dummy')()
+
+            self.__dict__.update(tools)
+            self.ad_tools_loaded = True
+            return tools
 
         def getReceptor(self):
             return self.receptor
@@ -48,6 +84,7 @@ class ADContext:
         Callbacks act as Observers, because we will probably not use observer objects, but just methods,
         hence callbacks
         """
+
         def _notify_observers(self):
             for callback in self._callbacks:
                 callback()

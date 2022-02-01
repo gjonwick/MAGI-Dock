@@ -5,7 +5,7 @@ from src.Entities.Receptor import Receptor
 from src.utils.util import dotdict
 from src.utils.util import *
 from src.log.Logger import *
-from src.ad import ad
+from src.ad import AutoDock
 
 
 class ReceptorJobController:
@@ -22,47 +22,104 @@ class ReceptorJobController:
         logger_factory = LoggerFactory()
         return logger_factory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.receptorLogBox)
 
+    # XXX: rething if checking for module path and if it's loaded, should be done here
     def generate(self):
-        """ Generates pdbqt file for the receptor. """
         adContext = ADContext()
-        form = self.form
+        # mgl_path = adContext.config['mgl_path']
+        # MODULE_LOADED = False
+        # if mgl_path is None and not MODULE_LOADED:
+        #     self.logger.error('MGL path not specified! Please specify the path to mgl_tools first!')
+        #     return
+        #
+        # ad = AutoDock()
+        # result = ad.prepare_receptor(r='dummy.pdb', o='dummy.pdbqt')
+        # self.logger.debug(result)s
 
+        # TODO: remove this from here
+        form = self.form
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
             self.logger.error('You can only have 1 receptor!')
             return
-
         receptor_name = selection[0].text()
 
-        WORK_DIR = os.getcwd()  # TODO: temporary
-        prepare_receptor = 'prepare_receptor'
-        receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdb')
-        outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdbqt')
+        outputfile = f'{receptor_name}.pdbqt'
 
-        # try:
-        #     cmd.save(receptor_path, receptor)
-        # except cmd.QuietException:
-        #     pass
+        with while_in_dir(os.path.expanduser("~")):
+            try:
+                cmd.save(f'testing_{receptor_name}.pdb', receptor_name)
+            except cmd.QuietException:
+                pass
 
-        command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
-        # self.logger.info(command)
-        # self.logger.debug(command)
-        # result, output = getStatusOutput(command)
-        result = 0
-        # print('Generating receptor ...')
-        self.logger.debug('Trying ad module!')
-        result = ad.prepare_receptor(r=receptor_path, o=outputfile, A='checkhydrogens')()
-        rc = result[0]
-        self.logger.debug(result)
-        # if rc == 2:
-        #     receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
-        #     receptor.name = receptor_name
-        #     receptor.pdbqt_location = outputfile
-        #     adContext.addReceptor(receptor)
-        #     self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
-        # else:
-        #     self.logger.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
+            """ Alternative way, here ADContext is responsible for running the ad module commands
+                and for checking if the config is ok. """
+            ad_tools = None
+
+            if not adContext.ad_tools_loaded:
+                ad_tools = adContext.load_ad_tools()
+
+            if ad_tools is not None:
+                (rc, stdout, stderr) = adContext.prepare_receptor(r=f'testing_{receptor_name}.pdb', o=outputfile)
+                print(f'Return code = {rc}')
+
+                if stdout is not None:
+                    self.logger.debug(f"{stdout.decode('utf-8')}")
+                if stderr is not None:
+                    self.logger.error(f"{stderr.decode('utf-8')}")
+
+                # if rc == 0:
+                #     receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
+                #     receptor.name = receptor_name
+                #     receptor.pdbqt_location = outputfile
+                #     adContext.addReceptor(receptor)
+                #     self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
+                # else:
+                #     self.logger.error(f'Failed generating receptor {receptor_name}!')
+            else:
+                self.logger.error(f'mgl_path not set or module not loaded!')
+
+    # def generate(self):
+    #     """ Generates pdbqt file for the receptor. """
+    #     adContext = ADContext()
+    #     form = self.form
+    #
+    #     selection = form.sele_lstw.selectedItems()
+    #     if len(selection) > 1:
+    #         print('You can only have 1 receptor!')
+    #         self.logger.error('You can only have 1 receptor!')
+    #         return
+    #
+    #     receptor_name = selection[0].text()
+    #
+    #     WORK_DIR = os.getcwd()  # TODO: temporary
+    #     prepare_receptor = 'prepare_receptor'
+    #     receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdb')
+    #     outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdbqt')
+    #
+    #     # try:
+    #     #     cmd.save(receptor_path, receptor)
+    #     # except cmd.QuietException:
+    #     #     pass
+    #
+    #     command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
+    #     # self.logger.info(command)
+    #     # self.logger.debug(command)
+    #     # result, output = getStatusOutput(command)
+    #     result = 0
+    #     # print('Generating receptor ...')
+    #     self.logger.debug('Trying ad module!')
+    #     result = ad.prepare_receptor(r=receptor_path, o=outputfile, A='checkhydrogens')()
+    #     rc = result[0]
+    #     self.logger.debug(result)
+    #     # if rc == 2:
+    #     #     receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
+    #     #     receptor.name = receptor_name
+    #     #     receptor.pdbqt_location = outputfile
+    #     #     adContext.addReceptor(receptor)
+    #     #     self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
+    #     # else:
+    #     #     self.logger.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
 
     def flexible(self):
         from pymol import stored
