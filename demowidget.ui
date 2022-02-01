@@ -1228,8 +1228,6 @@
       </property>
      </widget>
     </widget>
-<<<<<<< HEAD
-=======
     <widget class="QPlainTextEdit" name="dockingLogBox">
      <property name="geometry">
       <rect>
@@ -1240,7 +1238,6 @@
       </rect>
      </property>
     </widget>
->>>>>>> e39241a0dcef2716c7958eae378bd412b3fa879e
    </widget>
   </widget>
   <widget class="QPlainTextEdit" name="plainTextEdit">
