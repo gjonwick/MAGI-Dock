@@ -35,20 +35,23 @@ class ReceptorJobController:
         # result = ad.prepare_receptor(r='dummy.pdb', o='dummy.pdbqt')
         # self.logger.debug(result)s
 
-        # TODO: remove this from here
+        # TODO: (future issue) remove form reference from here; better if the API classes do not know about the form
         form = self.form
         selection = form.sele_lstw.selectedItems()
         if len(selection) > 1:
             print('You can only have 1 receptor!')
             self.logger.error('You can only have 1 receptor!')
             return
+
         receptor_name = selection[0].text()
 
-        outputfile = f'{receptor_name}.pdbqt'
+        receptor_pdb = f'ad_binding_test_{receptor_name}.pdb'
+        receptor_pdbqt = f'ad_binding_test_{receptor_name}.pdbqt'
 
-        with while_in_dir(os.path.expanduser("~")):
+        # os.path.expanduser("~")
+        with while_in_dir(adContext.config['working_dir']):
             try:
-                cmd.save(f'testing_{receptor_name}.pdb', receptor_name)
+                cmd.save(receptor_pdb, receptor_name)
             except cmd.QuietException:
                 pass
 
@@ -60,8 +63,9 @@ class ReceptorJobController:
                 ad_tools = adContext.load_ad_tools()
 
             if ad_tools is not None:
-                (rc, stdout, stderr) = adContext.prepare_receptor(r=f'testing_{receptor_name}.pdb', o=outputfile)
+                (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
                 print(f'Return code = {rc}')
+                self.logger.debug(f"Return code = {rc}")
 
                 if stdout is not None:
                     self.logger.debug(f"{stdout.decode('utf-8')}")
