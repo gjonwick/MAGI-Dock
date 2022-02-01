@@ -63,10 +63,16 @@ def getStatusOutput(command):
     output = p.communicate()[0]
     return p.returncode, output
 
+
 """ Helper code to deal with environment modules. """
 
-def loaded_modules():
-    return os.environ['LOADEDMODULES'].split(':')
+
+def get_loaded_modules():
+    m = os.environ.pop('LOADEDMODULES', False)
+    if m:
+        return os.environ['LOADEDMODULES'].split(':')
+    return None
+
 
 def module_loaded(module_name):
     """ Checks if a module (as in CentOS modules) is loaded. """
@@ -75,14 +81,19 @@ def module_loaded(module_name):
     # grep_proc.communicate()
     # return grep_proc.returncode == 0
 
-    lmods = loaded_modules()
     flag = False
-    for module in lmods:
+
+    loaded_modules = get_loaded_modules()
+    if loaded_modules is None:
+        return False
+
+    for module in loaded_modules:
         if module_name.lower() in module.lower():
             flag = True
             break
 
     return flag
+
 
 def find_executables(path):
     execs = []
@@ -90,7 +101,7 @@ def find_executables(path):
         full_exe_path = os.path.join(path, exe)
         if (os.access(full_exe_path, os.X_OK)) and not os.path.isdir(fullexe):
             execs.append(exe)
-        
+
     return execs
 
 

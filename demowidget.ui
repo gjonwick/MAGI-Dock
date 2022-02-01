@@ -171,6 +171,9 @@
    <property name="singleStep">
     <double>0.250000000000000</double>
    </property>
+   <property name="stepType">
+    <enum>QAbstractSpinBox::DefaultStepType</enum>
+   </property>
   </widget>
   <widget class="QLabel" name="label_4">
    <property name="geometry">

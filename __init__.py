@@ -10,23 +10,24 @@ the additional features of PyQt5.
 '''
 
 # TODO: Fill the receptor and flexible residues lists before running the generation
+# TODO: Recheck the default focuses on buttons
 # then the user should be able to choose between receptors and flexibles
 
 
 from __future__ import absolute_import
 from __future__ import print_function
 
-# Avoid importing "expensive" modules here (e.g. scipy), since this code is
-# executed on PyMOL's startup. Only import such modules inside functions.
-
 import os
 import sys
 
+# Avoid importing "expensive" modules here (e.g. scipy), since this code is
+# executed on PyMOL's startup. Only import such modules inside functions.
+
 sys.path.append(os.path.join(os.path.dirname(__file__)))
-sys.path.append('.')
+if '.' not in sys.path:
+    sys.path.append('.')
 
 print(sys.path)
-
 
 from src.Entities.Ligand import Ligand
 from src.Entities.Receptor import Receptor
@@ -37,7 +38,7 @@ from src.api.BoxAPI import BoxAPI
 # from src.utils.util import dotdict
 
 from src.api.LigandAPI import LigandJobController
-from src.api.ReceptorAPI import ReceptorJobController
+from .src.api.ReceptorAPI import ReceptorJobController
 from src.api.JobController import *
 
 from src.log.Logger import *
@@ -515,12 +516,38 @@ def make_dialog():
             adContext.config['box_path'] = filename[0]
             logger.info(adContext.config['box_path'])
 
+    def OnBrowseWorkingDirClicked():
+        filename = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        adContext.config['working_dir'] = filename
+        logger.info(f'working_dir = {filename}')
+
     def OnExhaustChange():
         adContext.config['dockingjob_params']['exhaustiveness'] = float(form.exhaust_txt.text())
 
+    # NOTE: doesn't change the environment of the application (i.e. executing cd will not change the current
+    # directory, since that is controlled by the os module). Use the app shell, just for simple commands,
+    # i.e. loading modules, checking the currentworking directory, etc.
+    # The shell is not connected to the application state (TODO: to be considered in the future)
+    def OnShellCommandSubmitted():
+        import subprocess, traceback
+        cmd = form.shellInput_txt.text()  # TODO: maybe a better way is to pass it as an argument
+        #args = cmd.split(' ')
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
-    def OnShellCommand():
-        pass
+        try:
+            out, err = p.communicate()
+            rc = p.returncode
+        except Exception as e:
+            logger.error(traceback.format_exc())
+
+        if rc == 0:
+            logger.info("Success!")
+        else:
+            logger.error(f"An error occurred executing: {cmd}")
+
+        logger.info(out.decode('utf-8'))
+
+        form.shellInput_txt.clear()
 
     def dummy():
         logger.debug('Callback works!')
@@ -573,10 +600,10 @@ def make_dialog():
     form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)
     form.browseVina_btn.clicked.connect(OnBrowseVinaClicked)
     form.browseConfig_btn.clicked.connect(OnBrowseConfigClicked)
+    form.browseWorkDir_btn.clicked.connect(OnBrowseWorkingDirClicked)
 
     form.saveConfig_btn.clicked.connect(saveConfig)
 
-    form.shellInput_txt.returnPressed.connect(dummy)
-
+    form.shellInput_txt.returnPressed.connect(OnShellCommandSubmitted)
 
     return qDialog
