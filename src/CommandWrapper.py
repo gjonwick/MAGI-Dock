@@ -142,3 +142,11 @@ def create_tool(tool_name, command_name, driver=None):
     }
     tool = type(tool_name, (CustomCommand,), tool_dict)
     return tool
+
+""" Just a helper function to get a 'good looking' class name.
+Removing file extensions, etc. """
+def clsname_from_cmdname(cmd_name):
+    cls_name = cmd_name
+    if '.' in cmd_name:
+        cls_name = cmd_name.split('.')[0]
+    return cls_name

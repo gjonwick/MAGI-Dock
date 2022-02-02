@@ -61,55 +61,61 @@ class LigandJobController:
         # TODO: when ligand is already prepared, what to do?
         adContext = ADContext()
         form = self.form
-        WORK_DIR = ADContext.config.pop('working_dir', False)
-        if not WORK_DIR:
-            WORK_DIR = os.getcwd()
+        ligand_selection = form.ligands_lstw.selectedItems()
 
         SUCCESS_FLAG = True
         suffix = ''
-        ligand_selection = form.ligands_lstw.selectedItems()
 
-        prep_command = 'prepare_ligand'
-        if form.checkBox_hydrogens.isChecked():
-            suffix = '-A checkhydrogens'
+        if not adContext.ad_tools_loaded:
+            tools = adContext.load_ad_tools()
+            if tools is None:
+                self.logger.error('Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
+                return
+        
+        working_dir = adContext.config['working_dir']
+        with while_in_dir(working_dir):
 
-        for index, ligand_selection in enumerate(ligand_selection):
-            ligand_name = ligand_selection.text()
-            ligand = adContext.ligands[ligand_name]
-            self.logger.debug(f'Currently at ligand from ligand_lstw {ligand_name}')
-            if ligand.fromPymol:
-                ligand_pdb = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdb')
-                self.logger.debug(f'Generating pdb {ligand_pdb} for ligand {ligand.name}')
-                ligand.pdb = ligand_pdb
-                try:
-                    cmd.save(ligand_pdb, ligand_name)
-                except cmd.QuietException:
-                    pass
-            else:
-                ligand_pdb = ligand.pdb
+            # prep_command = 'prepare_ligand'
+            # if form.checkBox_hydrogens.isChecked():
+            #     suffix = '-A checkhydrogens'
 
-            ligand_pdbqt = os.path.join(WORK_DIR, f'TESTING_LIGAND_{ligand_name}.pdbqt')
-            ligand.pdbqt = ligand_pdbqt
+            for index, ligand_selection in enumerate(ligand_selection):
+                ligand_name = ligand_selection.text()
+                ligand = adContext.ligands[ligand_name]
+                self.logger.debug(f'Currently at ligand from ligand_lstw {ligand_name}')
+                if ligand.fromPymol:
+                    ligand_pdb = os.path.join(working_dir, f'ad_binding_test_ligand{ligand_name}.pdb')
+                    self.logger.debug(f'Generating pdb {ligand_pdb} for ligand {ligand.name}')
+                    ligand.pdb = ligand_pdb
+                    try:
+                        cmd.save(ligand_pdb, ligand_name)
+                    except cmd.QuietException:
+                        pass
+                else:
+                    ligand_pdb = ligand.pdb
 
-            command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
-            # TODO: should look something like: command = ad.prepare_ligand(l=ligand_pdb, o=ligand_pdbqt)
-            # result should be handled by the command wrapper, not here
+                ligand_pdbqt = os.path.join(working_dir, f'ad_binding_test_ligand{ligand_name}.pdbqt')
+                ligand.pdbqt = ligand_pdbqt
 
-            # result, output = getStatusOutput(command)
-            result = 0
+                
+                (rc, stdout, stderr) = adContext.prepare_ligand(l=ligand_pdb, o=ligand_pdbqt)
+                #command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
+                # result, output = getStatusOutput(command)
+                if stdout is not None:
+                    self.logger.debug(f"{stdout.decode('utf-8')}")
+                
+                if rc == 0:
+                    # self.logger.debug(output)
+                    ligand.prepare()
+                    # ligand.pdbqt = ligand_pdbqt
 
-            if result == 0:
-                # self.logger.debug(output)
-                ligand.prepare()
-                # ligand.pdbqt = ligand_pdbqt
+                    # TODO: prepared ligand was added here to the view, but fix that
+                    '''
+                    form.preparedLigands_lstw.addItem(ligand.name)
+                    form.preparedLigands_lstw_2.addItem(ligand.name)
+                    '''
 
-                # TODO: prepared ligand was added here to the view, but fix that
-                '''
-                form.preparedLigands_lstw.addItem(ligand.name)
-                form.preparedLigands_lstw_2.addItem(ligand.name)
-                '''
-
-                self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
-            else:
-                self.logger.info(f'An error occurred while trying to prepare the ligand ...')
-                # self.logger.info(output)
+                    self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
+                else:
+                    self.logger.info(f'An error occurred while trying to prepare the ligand ...')
+                    # self.logger.info(output)

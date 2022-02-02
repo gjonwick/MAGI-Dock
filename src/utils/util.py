@@ -7,7 +7,7 @@ def touch(filename):
     with open(filename, 'a'):
         pass
 
-
+#TODO: maybe yield the working dir
 @contextmanager
 def while_in_dir(destination_dir, create=True):
     """ Convenient function to execute stuff inside a directory. Yields the success status, and the err message if
@@ -68,7 +68,7 @@ def getStatusOutput(command):
 
 
 def get_loaded_modules():
-    m = os.environ.pop('LOADEDMODULES', False)
+    m = 'LOADEDMODULES' in os.environ
     if m:
         return os.environ['LOADEDMODULES'].split(':')
     return None

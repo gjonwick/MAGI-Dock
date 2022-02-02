@@ -20,7 +20,6 @@ class VinaWorker(QtCore.QObject):
         dockingjob_params = adContext.config['dockingjob_params']
         exhaustiveness = dockingjob_params['exhaustiveness']
 
-
         receptor = adContext.receptor
         rigid_receptor = receptor.rigid_pdbqt
         flex_receptor = receptor.flex_pdbqt

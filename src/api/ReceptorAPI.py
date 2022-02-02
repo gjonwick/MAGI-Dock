@@ -24,15 +24,6 @@ class ReceptorJobController:
     # XXX: rething if checking for module path and if it's loaded, should be done here
     def generate(self):
         adContext = ADContext()
-        # mgl_path = adContext.config['mgl_path']
-        # MODULE_LOADED = False
-        # if mgl_path is None and not MODULE_LOADED:
-        #     self.logger.error('MGL path not specified! Please specify the path to mgl_tools first!')
-        #     return
-        #
-        # ad = AutoDock()
-        # result = ad.prepare_receptor(r='dummy.pdb', o='dummy.pdbqt')
-        # self.logger.debug(result)s
 
         # TODO: (future issue) remove form reference from here; better if the API classes do not know about the form
         form = self.form
@@ -44,11 +35,21 @@ class ReceptorJobController:
 
         receptor_name = selection[0].text()
 
-        receptor_pdb = f'ad_binding_test_{receptor_name}.pdb'
-        receptor_pdbqt = f'ad_binding_test_{receptor_name}.pdbqt'
+        working_dir = adContext.config['working_dir']
 
+        receptor_pdb = os.path.join(working_dir, f'ad_binding_test_{receptor_name}.pdb')
+        receptor_pdbqt = os.path.join(working_dir, f'ad_binding_test_{receptor_name}.pdbqt')
+
+        # Better to not use adContext.ad_tools_loaded, in order to distinguish between init load, or couldn't load
+        if not adContext.ad_tools_loaded:
+            tools = adContext.load_ad_tools()
+            if tools is None:
+                self.logger.error('Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
+                return
+       
         # os.path.expanduser("~")
-        with while_in_dir(adContext.config['working_dir']):
+        with while_in_dir(working_dir):
+            
             try:
                 cmd.save(receptor_pdb, receptor_name)
             except cmd.QuietException:
@@ -56,79 +57,29 @@ class ReceptorJobController:
 
             """ Alternative way, here ADContext is responsible for running the ad module commands
                 and for checking if the config is ok. """
-            ad_tools = None
 
-            if not adContext.ad_tools_loaded:
-                ad_tools = adContext.load_ad_tools()
+            
+            (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
+            print(f'Return code = {rc}')
+            self.logger.debug(f"Return code = {rc}")
 
-            if ad_tools is not None:
-                (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
-                print(f'Return code = {rc}')
-                self.logger.debug(f"Return code = {rc}")
+            if stdout is not None:
+                self.logger.debug(f"{stdout.decode('utf-8')}")
 
-                if stdout is not None:
-                    self.logger.debug(f"{stdout.decode('utf-8')}")
-                if stderr is not None:
-                    self.logger.error(f"{stderr.decode('utf-8')}")
-
-                # if rc == 0:
-                #     receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
-                #     receptor.name = receptor_name
-                #     receptor.pdbqt_location = outputfile
-                #     adContext.addReceptor(receptor)
-                #     self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
-                # else:
-                #     self.logger.error(f'Failed generating receptor {receptor_name}!')
+            if rc == 0:
+                receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
+                receptor.name = receptor_name
+                receptor.pdbqt_location = receptor_pdbqt
+                adContext.addReceptor(receptor)
+                self.logger.info(f'Receptor pdbqt generated at: {adContext.receptor.pdbqt_location}')
             else:
-                self.logger.error(f'mgl_path not set or module not loaded!')
-
-    # def generate(self):
-    #     """ Generates pdbqt file for the receptor. """
-    #     adContext = ADContext()
-    #     form = self.form
-    #
-    #     selection = form.sele_lstw.selectedItems()
-    #     if len(selection) > 1:
-    #         print('You can only have 1 receptor!')
-    #         self.logger.error('You can only have 1 receptor!')
-    #         return
-    #
-    #     receptor_name = selection[0].text()
-    #
-    #     WORK_DIR = os.getcwd()  # TODO: temporary
-    #     prepare_receptor = 'prepare_receptor'
-    #     receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdb')
-    #     outputfile = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor_name}.pdbqt')
-    #
-    #     # try:
-    #     #     cmd.save(receptor_path, receptor)
-    #     # except cmd.QuietException:
-    #     #     pass
-    #
-    #     command = f'{prepare_receptor} -r {receptor_path} -o {outputfile} -A checkhydrogens'
-    #     # self.logger.info(command)
-    #     # self.logger.debug(command)
-    #     # result, output = getStatusOutput(command)
-    #     result = 0
-    #     # print('Generating receptor ...')
-    #     self.logger.debug('Trying ad module!')
-    #     result = ad.prepare_receptor(r=receptor_path, o=outputfile, A='checkhydrogens')()
-    #     rc = result[0]
-    #     self.logger.debug(result)
-    #     # if rc == 2:
-    #     #     receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
-    #     #     receptor.name = receptor_name
-    #     #     receptor.pdbqt_location = outputfile
-    #     #     adContext.addReceptor(receptor)
-    #     #     self.logger.info(f'Receptor pdbqt location = {adContext.receptor.pdbqt_location}')
-    #     # else:
-    #     #     self.logger.error(f'Receptor {receptor_name} pdbqt file could not be generated!')
-
+                self.logger.error(f'Failed generating receptor {receptor_name}!')
+        
+   
     def flexible(self):
         from pymol import stored
         """ Generates pdbqt files for the flexible receptor. """
         adContext = ADContext()
-        adfr_path = adContext.config['adfr_path']
         form = self.form
 
         sele = form.sele_lstw.selectedItems()
@@ -137,6 +88,12 @@ class ReceptorJobController:
             print('One selection at a time please!')
             self.logger.error('One selection at a time please!')
             return
+        
+        if not adContext.ad_tools_loaded:
+            tools = adContext.load_ad_tools()
+            if tools is None:
+                self.logger.error('Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
+                return
 
         if adContext.receptor is None:
             self.logger.error('Please generate the receptor first!')
@@ -159,45 +116,52 @@ class ReceptorJobController:
         if adContext.receptor is not None:
             adContext.receptor.flexible_residues = chains
             adContext.setReceptor(
-                adContext.receptor)  # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
+                adContext.receptor) # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
+                                    # receptor is already set, now you just reset it
 
-        res_string = adContext.receptor.flexibleResiduesAsString()
-        # self.logger.info(res_string)
+        """ In the pymol session the flexible residues will have already
+        been assigned to the receptor. If the program fails to generate the 
+        respective (pdbqt) files, then the receptor and its flexible
+        residues will still be 'cached' in the session, and ready to be rerun. """
 
-        WORK_DIR = os.getcwd()  # TODO: temporary
-        prepare_receptor = 'prepare_flexreceptor.py'
-        # receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
-        receptor_pdbqt = adContext.receptor.pdbqt_location
+        working_dir = adContext.config['working_dir']
 
-        self.logger.info(f'Generating flexible residues ... {res_string}')
-        print(f'Generating flexible residues ... {res_string}')
+        with while_in_dir(working_dir):
+            
+            res_string = adContext.receptor.flexibleResiduesAsString()
+            receptor_pdbqt = adContext.receptor.pdbqt_location
 
-        command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
-        self.logger.info(command)
+            prepare_receptor = 'prepare_flexreceptor.py'
+            # receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
 
-        # result, output = getStatusOutput(command)
-        result = 0
-        # print(output)
+            self.logger.info(f'Generating flexible residues ... {res_string}')
+            print(f'Generating flexible residues ... {res_string}')
 
-        if result == 0:
+            (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string) 
+            #command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
+            # result, output = getStatusOutput(command)
+            if stdout is not None:
+                self.logger.debug(f"{stdout.decode('utf-8')}")
 
-            # TODO: autodock should return the names somewhere
-            # check the paper
-            rigid_receptor = receptor_pdbqt.split('.')[0] + '_rigid.pdbqt'
-            flex_receptor = receptor_pdbqt.split('.')[0] + '_flex.pdbqt'
+            if rc == 0:
 
-            adContext.receptor.rigid_pdbqt = rigid_receptor
-            adContext.receptor.flex_pdbqt = flex_receptor
+                # TODO: autodock should return the names somewhere
+                # check the paper
+                rigid_receptor = receptor_pdbqt.split('.')[0] + '_rigid.pdbqt'
+                flex_receptor = receptor_pdbqt.split('.')[0] + '_flex.pdbqt'
 
-            # self.logger.debug(f'{output}')
-            # for chain, contents in chains.items():
-            #     for res in contents:
-            #         form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
+                adContext.receptor.rigid_pdbqt = rigid_receptor
+                adContext.receptor.flex_pdbqt = flex_receptor
 
-            self.logger.info(f'Success generating flexible receptor with flexible residues {res_string}')
-            print(f'Success generating flexible receptor with flexible residues {res_string}')
-        else:
-            self.logger.error(
-                f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
+                # self.logger.debug(f'{output}')
+                # for chain, contents in chains.items():
+                #     for res in contents:
+                #         form.flexRes_lstw.addItem(f'{chain} : {str(res.resn)}{str(res.resi)}')
+
+                self.logger.info(f'Success generating flexible receptor with flexible residues {res_string}')
+                print(f'Success generating flexible receptor with flexible residues {res_string}')
+            else:
+                self.logger.error(
+                    f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
 
         # form.flexRes_lstw.addItems(stored.flexible_residues)

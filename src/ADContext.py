@@ -35,6 +35,7 @@ class ADContext:
             self._ligand_callbacks = []
             self._ligandondock_callbacks = []
             self.ad_tools_loaded = False
+            self.vina_tools_loaded = False
             self.config = {'vina_path': None, 'adfr_path': None, 'mgl_path': None, 'box_path': None,
                            'dockingjob_params': {
                                'exhaustiveness': 32,
@@ -44,10 +45,11 @@ class ADContext:
                            'working_dir': os.getcwd()}
             self.ligand_to_dock = None
             self.ad_command_list = ['prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
+            self.vina_command_list = []
 
         """ Maybe get rid of ad and vina classes, and init everything here? Either way, you can just export this code
             to a separate class. """
-
+        # TODO: just return True or False
         def load_ad_tools(self):
             tools = {}
             AD_MODULE_LOADED = module_loaded('ADFRsuite') and module_loaded('mgltools')
@@ -58,6 +60,7 @@ class ADContext:
                     return None
 
             for command_name in self.ad_command_list:
+                cls_name = clsname_from_cmdname(command_name)
                 if not AD_MODULE_LOADED:
                     if command_name[-3:] == '.py':
                         full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
@@ -68,15 +71,33 @@ class ADContext:
                 else:
                     full_command = command_name
 
-                tools[command_name] = create_tool(command_name.upper(), full_command, 'dummy')()
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, 'dummy')()
 
             self.__dict__.update(tools)
             self.ad_tools_loaded = True
             return tools
 
-        def getReceptor(self):
-            return self.receptor
+        def load_vina_tools(self):
+            tools = {}
+            VINA_MODULE_LOADED = module_loaded('vina')
 
+            if not AD_MODULE_LOADED:
+                if self.config['vina_path'] is None:
+                    print('ADContext here: vina_path not specified, returning')
+                    return None
+            
+            for command_name in self.vina_command_list:
+                cls_name = clsname_from_cmdname(command_name)
+                if not VINA_MODULE_LOADED:
+                    full_command = os.path.join(self.config['vina_path'], command_name)
+                else:
+                    full_command = command_name
+                
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, 'dummy')
+
+        def getReceptor(self):
+            return self.receptor    
+            
         def setReceptor(self, receptor):
             self.receptor = receptor
             self._notify_observers()

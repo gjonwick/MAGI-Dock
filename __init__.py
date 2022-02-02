@@ -492,6 +492,7 @@ def make_dialog():
         filename = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['mgl_path'] = filename
         logger.info(f'mgl_path = {filename}')
+        form.mglPath_txt.setText(filename)
         # if filename != ('', ''):
         #     form.mglPath_txt.setText(filename[0])
         #     adContext.config['mgl_path'] = filename[0]
