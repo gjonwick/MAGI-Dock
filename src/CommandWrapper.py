@@ -1,9 +1,11 @@
 import subprocess
 import sys
+from src.decorators import debug_logger
 
 
 class CustomCommand(object):
     command_name = None
+    executable = None
 
     '''
     Receives default args
@@ -12,6 +14,7 @@ class CustomCommand(object):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+
 
     def execute(self, *args, **kwargs):
         print(f'SUPPLIED: *args = [{args}], **kwargs = [{kwargs}]')
@@ -59,6 +62,7 @@ class CustomCommand(object):
             raise
 
         rc = p.returncode
+        print(f'Command ran: {p.args}')
         return (rc, out, err), p
 
     def buildProcess(self, *args, **kwargs):
@@ -82,9 +86,12 @@ class CustomCommand(object):
 
     def _commandline(self, *args, **kwargs):
         print("Inside _commandline; before preparing args!")
-        print(f'Inside _commandline; command = {[self.command_name] + self.prepare_args(*args, **kwargs)}')
-        return [self.command_name] + self.prepare_args(*args,
-                                                       **kwargs)  # because of this, the prints inside the prepare_args will be shown twice in the console output
+        command = self.command_name
+        p_args = self.prepare_args(*args, **kwargs)
+        print(f'Inside _commandline; command = {[command] + p_args}')
+        if self.executable is not None:
+            return [self.executable, command] + p_args
+        return [command] + p_args
 
     def prepare_args(self, *args, **kwargs):
         ''' Modify arguments in a format acceptable by Popen.
@@ -131,21 +138,23 @@ class PopenWithInput(subprocess.Popen):
 
     def __init__(self, *args, **kwargs):
         self.command = args[0]
-
+        # if self.command.endswith('.py'):
+        #     args.insert(0, sys.executable)
         super(PopenWithInput, self).__init__(*args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
-def create_tool(tool_name, command_name, driver=None):
+def create_tool(tool_name, command_name, executable=None):
     tool_dict = {
         'command_name': command_name,
-        'driver': driver
+        'executable': executable
     }
     tool = type(tool_name, (CustomCommand,), tool_dict)
     return tool
 
-""" Just a helper function to get a 'good looking' class name.
-Removing file extensions, etc. """
+
 def clsname_from_cmdname(cmd_name):
+    """ Just a helper function to get a 'good looking' class name.
+    Removing file extensions, etc. """
     cls_name = cmd_name
     if '.' in cmd_name:
         cls_name = cmd_name.split('.')[0]

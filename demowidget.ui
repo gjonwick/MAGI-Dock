@@ -16,6 +16,10 @@
   <property name="windowTitle">
    <string>MAGI-Dock</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../Desktop/Face_colored_cube.png</normaloff>../Desktop/Face_colored_cube.png</iconset>
+  </property>
   <widget class="QDoubleSpinBox" name="centerY">
    <property name="geometry">
     <rect>
@@ -363,6 +367,9 @@
    </property>
   </widget>
   <widget class="QCheckBox" name="showBox_ch">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
    <property name="geometry">
     <rect>
      <x>710</x>
@@ -372,10 +379,13 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="text">
     <string>Hide/Show</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
    <property name="checked">
     <bool>true</bool>
@@ -415,6 +425,9 @@
        <height>25</height>
       </rect>
      </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QLineEdit" name="mglPath_txt">
      <property name="geometry">
@@ -424,6 +437,9 @@
        <width>113</width>
        <height>25</height>
       </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QLineEdit" name="vinaPath_txt">
@@ -435,6 +451,9 @@
        <height>25</height>
       </rect>
      </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QLineEdit" name="configPath_txt">
      <property name="geometry">
@@ -444,6 +463,9 @@
        <width>113</width>
        <height>25</height>
       </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QLabel" name="label_22">
@@ -583,6 +605,9 @@
        <width>113</width>
        <height>25</height>
       </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QLabel" name="label_30">
@@ -1230,7 +1255,7 @@
      </property>
      <widget class="QLineEdit" name="exhaust_txt">
       <property name="enabled">
-       <bool>false</bool>
+       <bool>true</bool>
       </property>
       <property name="geometry">
        <rect>
@@ -1241,7 +1266,10 @@
        </rect>
       </property>
       <property name="readOnly">
-       <bool>true</bool>
+       <bool>false</bool>
+      </property>
+      <property name="clearButtonEnabled">
+       <bool>false</bool>
       </property>
      </widget>
      <widget class="QLabel" name="label_26">
@@ -1329,7 +1357,7 @@
     </rect>
    </property>
    <property name="focusPolicy">
-    <enum>Qt::NoFocus</enum>
+    <enum>Qt::ClickFocus</enum>
    </property>
    <property name="text">
     <string>Fill</string>

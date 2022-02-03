@@ -99,7 +99,7 @@ def find_executables(path):
     execs = []
     for exe in os.listdir(path):
         full_exe_path = os.path.join(path, exe)
-        if (os.access(full_exe_path, os.X_OK)) and not os.path.isdir(fullexe):
+        if (os.access(full_exe_path, os.X_OK)) and not os.path.isdir(full_exe_path):
             execs.append(exe)
 
     return execs
