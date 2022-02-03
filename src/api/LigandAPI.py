@@ -3,23 +3,25 @@ from pymol import cmd
 import os
 import logging
 from src.Entities.Ligand import Ligand
+from src.api.BaseController import BaseController
 from src.utils.util import *
 from src.log.Logger import LoggerFactory
 from src.decorators import *
 
+""" LigandJobController may be responsible for different ligand actions (add, loading, and preparing). """
 
-class LigandJobController:
 
-    def __init__(self, form):
-        self.form = form
-        self.logger = self._get_logger()
+class LigandJobController(BaseController):
+
+    def __init__(self, form, callbacks=None):
+        super(LigandJobController, self).__init__(form, callbacks)
 
     def run(self):
-        pass
+        self.logger.info('Im running fine!')
+        self.prepare()
 
     def _get_logger(self):
-        logger_factory = LoggerFactory()
-        return logger_factory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.ligandLogBox)
+        return self.loggerFactory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.ligandLogBox)
 
     def load_ligand(self):
         adContext = ADContext()
@@ -69,9 +71,10 @@ class LigandJobController:
         if not adContext.ad_tools_loaded:
             tools = adContext.load_ad_tools()
             if tools is None:
-                self.logger.error('Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
+                self.logger.error(
+                    'Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
                 return
-        
+
         working_dir = adContext.config['working_dir']
         with while_in_dir(working_dir):
 
@@ -97,13 +100,12 @@ class LigandJobController:
                 ligand_pdbqt = os.path.join(working_dir, f'ad_binding_test_ligand{ligand_name}.pdbqt')
                 ligand.pdbqt = ligand_pdbqt
 
-                
                 (rc, stdout, stderr) = adContext.prepare_ligand(l=ligand_pdb, o=ligand_pdbqt)
-                #command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
+                # command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
                 # result, output = getStatusOutput(command)
                 if stdout is not None:
                     self.logger.debug(f"{stdout.decode('utf-8')}")
-                
+
                 if rc == 0:
                     # self.logger.debug(output)
                     ligand.prepare()

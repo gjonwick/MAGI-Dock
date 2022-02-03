@@ -1,13 +1,15 @@
-'''
+"""
+MAGI-Dock
+
 PyMOL Docking Box
 
-An introduction about Widgets in Pymol can be found in the PyMol wiki, 
+An introduction about Widgets in Pymol can be found in the PyMol wiki,
 Plugin tutorial ("Rendering Plugin" from Michael Lerner)
 
-The following code uses the same library (pymol.Qt) which also provides direct access to 
+The following code uses the same library (pymol.Qt) which also provides direct access to
 the additional features of PyQt5.
 
-'''
+"""
 
 # TODO: Fill the receptor and flexible residues lists before running the generation
 # TODO: Recheck the default focuses on buttons
@@ -28,18 +30,19 @@ if '.' not in sys.path:
     sys.path.append('.')
 
 print(sys.path)
+print(sys.executable)
 
 from src.Entities.Ligand import Ligand
 from src.Entities.Receptor import Receptor
 
-# from src.ADContext import ADContext
+from src.ADContext import ADContext
 from src.api.BoxAPI import BoxAPI
 
 # from src.utils.util import dotdict
 
 from src.api.LigandAPI import LigandJobController
-from .src.api.ReceptorAPI import ReceptorJobController
-from src.api.JobController import *
+from src.api.ReceptorAPI import RigidReceptorController, FlexibleReceptorController
+from src.api.DockingAPI import VinaWorker, DockingJobController
 
 from src.log.Logger import *
 
@@ -353,7 +356,7 @@ def make_dialog():
         selection = form.ligands_lstw.selectedItems()
         for index, item in enumerate(selection):
             adContext.removeLigand(item.text())
-            # TODO: remove foreign ligand from pymol if you want
+            # TODO: remove foreign ligand from pymol (optional)
 
     def update_receptor_list():
         form.receptor_lstw.clear()
@@ -361,77 +364,40 @@ def make_dialog():
         form.receptor_lstw.addItems(receptor_names)
         # TODO: add tooltips here
 
+    # TODO: the same as with OnDockingJobClicked, get the list of Entities here, and pass them to their respective
+    #  controllers
+
+    # Controller classes are initialized for each job, thus getting new loggers every instantiation
+    # causing the log handlers to be "reloaded" (TODO: should be fixed in the future).
+    #  Even though right now the Controllers are used as
+    # "static" classes, the functionality may change in the future, so instantiating them for each run
+    # is convenient right now. The same controllers used here, may be used for other actions on the entities.
+
+    # NOTE: right here, by making controllers return messages on the task outcome, users can be notified
+    # using "windows", "forms", etc.
+    # i.e. result = rigidReceptor.run() or result = rigidReceptor.getResultMessage() and showPopUpDialog(result)
+
     def OnGenerateReceptorClicked():
-        receptorController = ReceptorJobController(form, callbacks={'onReceptorAdded': onReceptorAdded})
-        receptorController.generate()
+        rigidReceptorController = RigidReceptorController(form, callbacks={'onReceptorAdded': onReceptorAdded})
+        rigidReceptorController.run()
 
     def OnGenerateFlexibleClicked():
-        receptorController = ReceptorJobController(form)
-        receptorController.flexible()
+        flexibleReceptorController = FlexibleReceptorController(form)
+        flexibleReceptorController.run()
 
     def OnPrepareLigandsClicked():
         ligandController = LigandJobController(form)
-        ligandController.prepare()
+        ligandController.run()
 
-    def run_docking_job():
-        form.thread = QtCore.QThread()
-        form.worker = VinaWorker()
-        form.worker.moveToThread(form.thread)
-        form.thread.started.connect(form.worker.run)
-        form.worker.finished.connect(form.thread.quit)
-        form.worker.finished.connect(form.worker.deleteLater)
-        form.thread.finished.connect(form.thread.deleteLater)
-        form.worker.progress.connect(lambda: logger.info('Working ... '))
+    def OnRunDockingJobClicked():
+        # Notify adContext about the ligands the user wishes to be docked
+        selectedLigands = form.preparedLigands_lstw_2.selectedItems()
+        for index, sele in enumerate(selectedLigands):
+            ligand = adContext.ligands[sele.text()]
+            adContext.ligands_to_dock[sele.text()] = ligand
 
-        # start thread
-        form.thread.start()
-
-        # final resets
-        form.runDocking_btn.setEnabled(False)
-        form.thread.finished.connect(
-            lambda: form.runDocking_btn.setEnabled(True)
-        )
-
-        form.thread.finished.connect(
-            lambda: logger.info('Finish!')
-        )
-
-    def run_docking_job_test():
-        box_path = adContext.config['box_path']
-
-        receptor = adContext.receptor
-        rigid_receptor = receptor.rigid_pdbqt
-        flex_receptor = receptor.flex_pdbqt
-        # ligand_to_dock = adContext.ligand_to_dock
-
-        ligands_to_dock = adContext.ligands_to_dock
-        sample_command = ''
-        if len(ligands_to_dock) == 1:
-            ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
-            sample_command = f'vina --receptor {rigid_receptor} \
-                                           --flex {flex_receptor} --ligand {ligand_to_dock.pdbqt} \
-                                           --config {box_path} \
-                                           --exhaustiveness 32 --out TESTING_DOCK_{receptor.name}_vina_out.pdbqt'
-        else:
-            # batch dock
-            pass
-
-        # ligands_to_dock = adContext.ligands_to_dock
-
-        # ligands_to_dock = ['str'] # NOTE: vina probably supports batch docking with multiple ligands
-        # ligand = adContext.ligands['str']
-        # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
-        # suffix = receptor.pdbqt_location.split('/')[-1]
-        # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
-
-        adContext.dockcommand = sample_command
-        args = sample_command.split()
-        print(f'Executing {args}')
-
-    def onCloseWindow():
-        cmd.delete('box')
-        cmd.delete('axes')
-        qDialog.close()
+        docking_job_controller = DockingJobController(form)
+        docking_job_controller.run()
 
     # "button" callbacks
     def onSelectGeneratedReceptor(item):
@@ -445,14 +411,6 @@ def make_dialog():
         """ Sets ADContext ligand to dock (not useful right now, if multiple ligands supported) """
         adContext.setLigandToDock(adContext.ligands[item.text()])
         logger.info(f'Ligand to dock is: {adContext.ligand_to_dock.name} at {adContext.ligand_to_dock.pdbqt}')
-
-    def OnRunDockingJob():
-        selectedLigands = form.preparedLigands_lstw_2.selectedItems()
-        for index, sele in enumerate(selectedLigands):
-            ligand = adContext.ligands[sele.text()]
-            adContext.ligands_to_dock[sele.text()] = ligand
-
-        run_docking_job()
 
     def update_flexible_list():
         form.flexRes_lstw.clear()
@@ -477,35 +435,22 @@ def make_dialog():
 
     # TODO: make them accept directory paths, not only files
     def OnBrowseADFRClicked():
-        filename = QtWidgets.QFileDialog.getOpenFileName(
-            qDialog, 'Open', filter='All Files (*.*)'
-        )
-        if filename != ('', ''):
-            form.adfrPath_txt.setText(filename[0])
-            adContext.config['adfr_path'] = filename[0]
-            logger.info(adContext.config['adfr_path'])
+        dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        adContext.config['adfr_path'] = dir_name
+        logger.info(f'adfr_path = {dir_name}')
+        form.adfrPath_txt.setText(dir_name)
 
     def OnBrowseMGLClicked():
-        # filename = QtWidgets.QFileDialog.getOpenFileName(
-        #     qDialog, 'Open', filter='All Files (*.*)'
-        # )
-        filename = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
-        adContext.config['mgl_path'] = filename
-        logger.info(f'mgl_path = {filename}')
-        form.mglPath_txt.setText(filename)
-        # if filename != ('', ''):
-        #     form.mglPath_txt.setText(filename[0])
-        #     adContext.config['mgl_path'] = filename[0]
-        #     logger.info(adContext.config['mgl_path'])
+        dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        adContext.config['mgl_path'] = dir_name
+        logger.info(f'mgl_path = {dir_name}')
+        form.mglPath_txt.setText(dir_name)
 
     def OnBrowseVinaClicked():
-        filename = QtWidgets.QFileDialog.getOpenFileName(
-            qDialog, 'Open', filter='All Files (*.*)'
-        )
-        if filename != ('', ''):
-            form.vinaPath_txt.setText(filename[0])
-            adContext.config['vina_path'] = filename[0]
-            logger.info(adContext.config['vina_path'])
+        dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        adContext.config['vina_path'] = dir_name
+        logger.info(f'vina_path = {dir_name}')
+        form.vinaPath_txt.setText(dir_name)
 
     def OnBrowseConfigClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
@@ -518,12 +463,15 @@ def make_dialog():
             logger.info(adContext.config['box_path'])
 
     def OnBrowseWorkingDirClicked():
-        filename = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
-        adContext.config['working_dir'] = filename
-        logger.info(f'working_dir = {filename}')
+        dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        adContext.config['working_dir'] = dir_name
+        logger.info(f'working_dir = {dir_name}')
+        form.workignDir_txt.setText(dir_name)
 
     def OnExhaustChange():
-        adContext.config['dockingjob_params']['exhaustiveness'] = float(form.exhaust_txt.text())
+        adContext.config['dockingjob_params']['exhaustiveness'] = float(
+            form.exhaust_txt.text().strip()) if form.exhaust_txt.text().strip().isnumeric() else 8
+        logger.debug(f"Exhaust set to: {adContext.config['dockingjob_params']['exhaustiveness']}")
 
     # NOTE: doesn't change the environment of the application (i.e. executing cd will not change the current
     # directory, since that is controlled by the os module). Use the app shell, just for simple commands,
@@ -532,23 +480,28 @@ def make_dialog():
     def OnShellCommandSubmitted():
         import subprocess, traceback
         cmd = form.shellInput_txt.text()  # TODO: maybe a better way is to pass it as an argument
-        #args = cmd.split(' ')
+        # args = cmd.split(' ')
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
 
         try:
             out, err = p.communicate()
             rc = p.returncode
+
+            if rc == 0:
+                logger.info("Success!")
+                logger.info(out.decode('utf-8'))
+            else:
+                logger.error(f"An error occurred executing: {cmd}")
+
         except Exception as e:
             logger.error(traceback.format_exc())
 
-        if rc == 0:
-            logger.info("Success!")
-        else:
-            logger.error(f"An error occurred executing: {cmd}")
-
-        logger.info(out.decode('utf-8'))
-
         form.shellInput_txt.clear()
+
+    def onCloseWindow():
+        cmd.delete('box')
+        cmd.delete('axes')
+        qDialog.close()
 
     def dummy():
         logger.debug('Callback works!')
@@ -587,7 +540,7 @@ def make_dialog():
     form.addLigand_btn.clicked.connect(OnAddLigandClicked)
     form.loadLigand_btn.clicked.connect(load_ligand)
     form.loadReceptor_btn.clicked.connect(load_receptor)
-    form.runDocking_btn.clicked.connect(OnRunDockingJob)
+    form.runDocking_btn.clicked.connect(OnRunDockingJobClicked)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.fillBox_ch.stateChanged.connect(fill_unfill_Box)

@@ -5,26 +5,24 @@ from src.Entities.Receptor import Receptor
 from src.utils.util import *
 from src.log.Logger import *
 from src.ad import AutoDock
+from src.api.BaseController import BaseController
+from typing import Any
 
 
-class ReceptorJobController:
+class RigidReceptorController(BaseController):
 
     def __init__(self, form, callbacks=None):
-        self.form = form
-        self.callbacks = callbacks
-        self.logger = self._get_logger()
+        super(RigidReceptorController, self).__init__(form, callbacks)
+
+    def _get_logger(self) :
+        return self.loggerFactory\
+                   .giff_me_logger(name=__name__,
+                                   level=logging.DEBUG,
+                                   destination=self.form.receptorLogBox)
 
     def run(self):
-        pass
-
-    def _get_logger(self):
-        logger_factory = LoggerFactory()
-        return logger_factory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.receptorLogBox)
-
-    # XXX: rething if checking for module path and if it's loaded, should be done here
-    def generate(self):
         adContext = ADContext()
-
+        self.logger.info('Im running fine!')
         # TODO: (future issue) remove form reference from here; better if the API classes do not know about the form
         form = self.form
         selection = form.sele_lstw.selectedItems()
@@ -44,12 +42,13 @@ class ReceptorJobController:
         if not adContext.ad_tools_loaded:
             tools = adContext.load_ad_tools()
             if tools is None:
-                self.logger.error('Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
+                self.logger.error(
+                    'Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
                 return
-       
+
         # os.path.expanduser("~")
         with while_in_dir(working_dir):
-            
+
             try:
                 cmd.save(receptor_pdb, receptor_name)
             except cmd.QuietException:
@@ -58,7 +57,6 @@ class ReceptorJobController:
             """ Alternative way, here ADContext is responsible for running the ad module commands
                 and for checking if the config is ok. """
 
-            
             (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
             print(f'Return code = {rc}')
             self.logger.debug(f"Return code = {rc}")
@@ -74,25 +72,34 @@ class ReceptorJobController:
                 self.logger.info(f'Receptor pdbqt generated at: {adContext.receptor.pdbqt_location}')
             else:
                 self.logger.error(f'Failed generating receptor {receptor_name}!')
-        
-   
-    def flexible(self):
+
+
+class FlexibleReceptorController(BaseController):
+
+    def __init__(self, form, callbacks=None):
+        super(FlexibleReceptorController, self).__init__(form, callbacks)
+
+    def _get_logger(self):
+        return self.loggerFactory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.receptorLogBox)
+
+    def run(self):
         from pymol import stored
         """ Generates pdbqt files for the flexible receptor. """
         adContext = ADContext()
         form = self.form
-
+        self.logger.info('Im running fine!')
         sele = form.sele_lstw.selectedItems()
         # TODO: make it a popup
         if len(sele) > 1:
             print('One selection at a time please!')
             self.logger.error('One selection at a time please!')
             return
-        
+
         if not adContext.ad_tools_loaded:
             tools = adContext.load_ad_tools()
             if tools is None:
-                self.logger.error('Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
+                self.logger.error(
+                    'Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
                 return
 
         if adContext.receptor is None:
@@ -116,8 +123,8 @@ class ReceptorJobController:
         if adContext.receptor is not None:
             adContext.receptor.flexible_residues = chains
             adContext.setReceptor(
-                adContext.receptor) # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
-                                    # receptor is already set, now you just reset it
+                adContext.receptor)  # trick the app into thinking that the receptor changed, in order to update the flexible listview(widget)
+            # receptor is already set, now you just reset it
 
         """ In the pymol session the flexible residues will have already
         been assigned to the receptor. If the program fails to generate the 
@@ -127,7 +134,7 @@ class ReceptorJobController:
         working_dir = adContext.config['working_dir']
 
         with while_in_dir(working_dir):
-            
+
             res_string = adContext.receptor.flexibleResiduesAsString()
             receptor_pdbqt = adContext.receptor.pdbqt_location
 
@@ -137,8 +144,8 @@ class ReceptorJobController:
             self.logger.info(f'Generating flexible residues ... {res_string}')
             print(f'Generating flexible residues ... {res_string}')
 
-            (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string) 
-            #command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
+            (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string)
+            # command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
             # result, output = getStatusOutput(command)
             if stdout is not None:
                 self.logger.debug(f"{stdout.decode('utf-8')}")
@@ -165,3 +172,4 @@ class ReceptorJobController:
                     f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
 
         # form.flexRes_lstw.addItems(stored.flexible_residues)
+

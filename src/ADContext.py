@@ -1,5 +1,4 @@
 # TODO: make it thread safe!
-import os
 from src.CommandWrapper import *
 from src.utils.util import *
 
@@ -45,7 +44,7 @@ class ADContext:
                            'working_dir': os.getcwd()}
             self.ligand_to_dock = None
             self.ad_command_list = ['prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
-            self.vina_command_list = []
+            self.vina_command_list = ['vina']
 
         """ Maybe get rid of ad and vina classes, and init everything here? Either way, you can just export this code
             to a separate class. """
@@ -61,17 +60,20 @@ class ADContext:
 
             for command_name in self.ad_command_list:
                 cls_name = clsname_from_cmdname(command_name)
+                executable = None
                 if not AD_MODULE_LOADED:
                     if command_name[-3:] == '.py':
                         full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
                                                     command_name)
+
                     else:
                         full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
                                                     command_name + '.py')
+                    executable = sys.executable
                 else:
                     full_command = command_name
 
-                tools[cls_name.lower()] = create_tool(cls_name, full_command, 'dummy')()
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, executable)()
 
             self.__dict__.update(tools)
             self.ad_tools_loaded = True
@@ -81,7 +83,7 @@ class ADContext:
             tools = {}
             VINA_MODULE_LOADED = module_loaded('vina')
 
-            if not AD_MODULE_LOADED:
+            if not VINA_MODULE_LOADED:
                 if self.config['vina_path'] is None:
                     print('ADContext here: vina_path not specified, returning')
                     return None
@@ -93,7 +95,11 @@ class ADContext:
                 else:
                     full_command = command_name
                 
-                tools[cls_name.lower()] = create_tool(cls_name, full_command, 'dummy')
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, None)
+
+            self.__dict__.update(tools)
+            self.vina_tools_loaded = True
+            return tools
 
         def getReceptor(self):
             return self.receptor    
@@ -127,9 +133,6 @@ class ADContext:
         def setForm(self, form):
             self.form = form
 
-        def setFlexibleResidues(self, residues):
-            self.flexibleResidues = residues
-
         def setLigands(self, ligands):
             self.ligands = ligands
 
@@ -137,8 +140,8 @@ class ADContext:
             self.ligands[ligand.name] = ligand
             self._notify_ligand_observers()
 
-        def removeLigand(self, id):
-            self.ligands.pop(id, None)
+        def removeLigand(self, l_id):
+            self.ligands.pop(l_id, None)
             self._notify_ligand_observers()
 
         def addReceptor(self, receptor):
@@ -146,8 +149,8 @@ class ADContext:
             receptor.onReceptorAdded()
             self.setReceptor(receptor)
 
-        def removeReceptor(self, id):
-            self.receptors.pop(id, None)
+        def removeReceptor(self, r_id):
+            self.receptors.pop(r_id, None)
 
     _instance = None
 
