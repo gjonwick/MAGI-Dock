@@ -72,14 +72,25 @@ class VinaWorker(QtCore.QObject):
             self.finished.emit('There are no ligands to dock!')
             return
 
+        """ When distinguishing between flexible or rigid, the receptor will make the difference. In the 
+        case of multiple docking, each ligand will be run on flexible residues if the receptor has flexible residues. 
+        If there are ligands to be run with rigid docking, than make sure there is another receptor with rigid residues. 
+        TODO: an option in the docking tab may be added to run flexible or rigid with the selected ligands on the prepared
+        ligands list. """
         with while_in_dir(working_dir):
-            if len(ligands_to_dock) == 1:
-                # basic docking
-                ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
-                self.basic_docking(ligand_to_dock)
-            else:
-                # batch docking
-                self.multiple_ligand_docking(ligands_to_dock)
+
+            try:
+                if len(ligands_to_dock) == 1:
+                    # basic docking
+                    ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
+                    self.basic_docking(ligand_to_dock)
+                else:
+                    # batch docking
+                    self.multiple_ligand_docking(ligands_to_dock)
+
+            except Exception as e:
+                self.finished.emit(e)
+
 
         # # ligands_to_dock = adContext.ligands_to_dock
         #
@@ -122,8 +133,8 @@ class VinaWorker(QtCore.QObject):
                                                       flex=flex_receptor,
                                                       ligand=ligand.pdbqt,
                                                       config=adContext.config['box_path'],
-                                                      exhaustiveness=adContext.config['dockingjob_params'][
-                                                          'exhaustiveness'],
+                                                      exhaustiveness=int(adContext.config['dockingjob_params'][
+                                                          'exhaustiveness']),
                                                       out=output_file)
 
             else:
@@ -136,18 +147,22 @@ class VinaWorker(QtCore.QObject):
             (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
                                                   ligand=ligand.pdbqt,
                                                   config=adContext.config['box_path'],
-                                                  exhaustiveness=adContext.config['dockingjob_params'][
-                                                      'exhaustiveness'],
+                                                  exhaustiveness=int(adContext.config['dockingjob_params'][
+                                                      'exhaustiveness']),
                                                   out=output_file)
-
+        
+        self.progress.emit(stdout.decode('utf-8'))
+        self.progress.emit("rc = {}".format(rc))
         if rc == 0:
             self.finished.emit(f'Docking job completed successfully. The poses can be loaded from {output_file}')
         else:
-            pass
+            self.finished.emit("ERRROR: {}".format(stderr.decode('utf-8')))
 
     def multiple_ligand_docking(self, ligands_to_dock):
         """ TODO """
         # self.logger.error("Multiple ligand docking not implemented yet!")
+        adContext = ADContext()
+
         return
 
 # sample_command = f'vina --receptor {rigid_receptor} \ --flex {flex_receptor} --ligand {

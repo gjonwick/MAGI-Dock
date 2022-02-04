@@ -95,7 +95,7 @@ class ADContext:
                 else:
                     full_command = command_name
                 
-                tools[cls_name.lower()] = create_tool(cls_name, full_command, None)
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, None)()
 
             self.__dict__.update(tools)
             self.vina_tools_loaded = True
