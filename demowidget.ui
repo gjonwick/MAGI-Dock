@@ -410,7 +410,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>3</number>
    </property>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -666,6 +666,9 @@
        <height>25</height>
       </rect>
      </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QPushButton" name="browseReceptor_btn">
      <property name="geometry">
@@ -867,6 +870,9 @@
        <height>25</height>
       </rect>
      </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QLabel" name="label_15">
      <property name="geometry">
@@ -1049,6 +1055,9 @@
        <width>200</width>
        <height>25</height>
       </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QPushButton" name="runDocking_btn">

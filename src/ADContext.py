@@ -149,6 +149,12 @@ class ADContext:
             receptor.onReceptorAdded()
             self.setReceptor(receptor)
 
+        def signalLigandAction(self):
+            self._notify_ligand_observers()
+
+        def signalReceptorAction(self):
+            self._notify_observers()
+
         def removeReceptor(self, r_id):
             self.receptors.pop(r_id, None)
 

@@ -24,10 +24,8 @@ class Ligand:
 
     def prepare(self):
         self.prepared = True
-        self.onPrepared()
 
     def __repr__(self):
         pdbqt = 'No PDBQT' if self.pdbqt == '' else self.pdbqt
-        isPrepared = 'Prepared' if self.prepared == True else 'Not Prepared'
+        isPrepared = 'Prepared' if self.prepared else 'Not Prepared'
         return f'Ligand(name={self.name}, pdb={self.pdb}, pdbqt={pdbqt}, status={isPrepared})'
-

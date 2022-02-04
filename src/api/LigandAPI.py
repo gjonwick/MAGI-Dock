@@ -11,9 +11,10 @@ from src.decorators import *
 """ LigandJobController may be responsible for different ligand actions (add, loading, and preparing). """
 
 
+# TODO: CRUD code may be wrapped into a "DAO" object
 class LigandJobController(BaseController):
 
-    def __init__(self, form, callbacks=None):
+    def __init__(self, form=None, callbacks=None):
         super(LigandJobController, self).__init__(form, callbacks)
 
     def run(self):
@@ -23,31 +24,56 @@ class LigandJobController(BaseController):
     def _get_logger(self):
         return self.loggerFactory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.ligandLogBox)
 
-    def load_ligand(self):
+    """ Load an imported ligand to the list of ligands (not prepared). """
+
+    def load_ligand(self, ligand_path):
         adContext = ADContext()
-        ligand_pdb_path = self.form.ligandPath_txt.text().strip()
 
-        if ligand_pdb_path.split('.') == 'pdbqt':
-            self.logger.error(f'PDBQTs not accepted here!')
-            # return
+        if ligand_path.split('.') == 'pdbqt':
+            self.logger.error("Ligand is already prepared, please choose another file!")
+            return
 
-        ligand_name = ligand_pdb_path.split('/')[-1].split('.')[0]
+        ligand_name = ligand_path.split('/')[-1].split('.')[0]
 
-        ligand = Ligand(ligand_name, ligand_pdb_path)  # onPrepared=onPreparedLigandChange
+        ligand = Ligand(ligand_name, ligand_path)  # onPrepared=onPreparedLigandChange
         ligand.fromPymol = False
-        adContext.addLigand(ligand)
-        cmd.load(ligand_pdb_path, object=ligand_name)
 
-    def add(self):
+        try:
+            adContext.addLigand(ligand)
+            cmd.load(ligand_path, object=ligand_name)
+        except Exception as e:
+            self.logger.error("An error occurred while importing ligand!")
+
+    def load_prepared_ligand(self, prepared_ligand_path):
         adContext = ADContext()
-        selected_ligands = self.form.sele_lstw_2.selectedItems()
-        self.logger.debug(f'Ligands to be added are: {selected_ligands}')
-        for index, sele in enumerate(selected_ligands):
+        prepared_ligand_name = prepared_ligand_path.split('/')[-1].split('.')[0]
+
+        ligand = Ligand(prepared_ligand_name, '')
+        ligand.pdbqt = prepared_ligand_path
+        ligand.fromPymol = False
+        ligand.prepared = True
+
+        try:
+            adContext.addLigand(ligand)
+            cmd.load(prepared_ligand_path, object=prepared_ligand_name)
+        except Exception as e:
+            self.logger.error("An error occurred while importing prepared ligand!")
+
+    def add_ligands(self, ligand_widget_list):
+        """ Used to add PyMOL ligands to the ligands widget (not prepared ligands).
+        Iteration on every ligand is done here. """
+        adContext = ADContext()
+        for index, sele in enumerate(ligand_widget_list):
             ligand = Ligand(sele.text(), '')  # onPrepared=onPreparedLigandChange
             adContext.addLigand(ligand)
 
-        self.logger.debug(adContext.ligands)
-        self.form.sele_lstw_2.clearSelection()
+        self.logger.debug("Ligands added = {}".format(adContext.ligands))
+
+    def remove_ligands(self, ligand_widget_list):
+        adContext = ADContext()
+        for index, item in enumerate(ligand_widget_list):
+            adContext.removeLigand(item.text())
+            # TODO: remove foreign ligand from pymol (optional)
 
     '''
        Generates pdbqt files for the ligands
@@ -101,23 +127,14 @@ class LigandJobController(BaseController):
                 ligand.pdbqt = ligand_pdbqt
 
                 (rc, stdout, stderr) = adContext.prepare_ligand(l=ligand_pdb, o=ligand_pdbqt)
-                # command = f'{prep_command} -l {ligand_pdb} -o {ligand_pdbqt} {suffix}'
-                # result, output = getStatusOutput(command)
+
                 if stdout is not None:
                     self.logger.debug(f"{stdout.decode('utf-8')}")
 
                 if rc == 0:
-                    # self.logger.debug(output)
                     ligand.prepare()
-                    # ligand.pdbqt = ligand_pdbqt
-
-                    # TODO: prepared ligand was added here to the view, but fix that
-                    '''
-                    form.preparedLigands_lstw.addItem(ligand.name)
-                    form.preparedLigands_lstw_2.addItem(ligand.name)
-                    '''
-
+                    adContext.signalLigandAction() # TODO: can be fixed by returning a "signal" and the main class
+                    # will fire the callbacks
                     self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
                 else:
                     self.logger.info(f'An error occurred while trying to prepare the ligand ...')
-                    # self.logger.info(output)

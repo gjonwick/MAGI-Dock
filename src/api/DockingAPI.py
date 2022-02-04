@@ -6,6 +6,9 @@ from src.api.BaseController import BaseController
 from typing import Any
 
 
+def get_pdbqt(ligand):
+    return ligand.pdbqt
+
 class DockingJobController(BaseController):
 
     def __init__(self, form, callbacks=None):
@@ -72,25 +75,30 @@ class VinaWorker(QtCore.QObject):
             self.finished.emit('There are no ligands to dock!')
             return
 
+        receptor = adContext.receptor
+        if receptor is None:
+            self.finished.emit("No receptor loaded! Please generate and load the receptor first!")
+            return
+
         """ When distinguishing between flexible or rigid, the receptor will make the difference. In the 
         case of multiple docking, each ligand will be run on flexible residues if the receptor has flexible residues. 
         If there are ligands to be run with rigid docking, than make sure there is another receptor with rigid residues. 
-        TODO: an option in the docking tab may be added to run flexible or rigid with the selected ligands on the prepared
-        ligands list. """
+        """
+        # TODO: an option in the docking tab may be added to run flexible or rigid with the selected ligands on the
+        #  prepared ligands list.
         with while_in_dir(working_dir):
 
             try:
                 if len(ligands_to_dock) == 1:
                     # basic docking
                     ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
-                    self.basic_docking(ligand_to_dock)
+                    self.basic_docking(ligand_to_dock, receptor)
                 else:
                     # batch docking
-                    self.multiple_ligand_docking(ligands_to_dock)
+                    self.multiple_ligand_docking(ligands_to_dock, receptor)
 
             except Exception as e:
                 self.finished.emit(e)
-
 
         # # ligands_to_dock = adContext.ligands_to_dock
         #
@@ -106,19 +114,12 @@ class VinaWorker(QtCore.QObject):
         # # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
         # # p.stdout.close()
 
-        self.finished.emit('DOne :)')
+        self.finished.emit('Done :)')
 
-    # TODO: should VinaWorker log? HELL NO, just emit
-    def basic_docking(self, ligand):
+    def basic_docking(self, ligand, receptor):
+        """ Function responsible for running docking with only 1 ligand. """
         adContext = ADContext()  # NOTE: (ADContext not yet thread safe)
         flex_docking = True
-
-        # get the entities
-        receptor = adContext.receptor
-
-        if receptor is None:
-            self.finished.emit("No receptor loaded! Please generate and load the receptor first!")
-            return
 
         if len(receptor.flexible_residues) == 0:
             flex_docking = False
@@ -127,43 +128,69 @@ class VinaWorker(QtCore.QObject):
             rigid_receptor = receptor.rigid_pdbqt
             flex_receptor = receptor.flex_pdbqt
             if flex_receptor is not None and rigid_receptor is not None:
-                # output_file = f'vina_result_{receptor.name}_flexible.pdbqt'
                 output_file = "vina_result_{}_flexible.pdbqt".format(receptor.name)
                 (rc, stdout, stderr) = adContext.vina(receptor=rigid_receptor,
                                                       flex=flex_receptor,
                                                       ligand=ligand.pdbqt,
                                                       config=adContext.config['box_path'],
                                                       exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                          'exhaustiveness']),
+                                                                             'exhaustiveness']),
                                                       out=output_file)
 
             else:
-                # self.logger.error('An error occurred while processing rigid and flexible structures!')
                 self.finished.emit('An error occurred while processing rigid and flexible structures!')
                 return
         else:
-            # output_file = f'vina_result_{receptor.name}.pdbqt'
             output_file = "vina_result_{}.pdbqt".format(receptor.name)
             (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
                                                   ligand=ligand.pdbqt,
                                                   config=adContext.config['box_path'],
                                                   exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                      'exhaustiveness']),
+                                                                         'exhaustiveness']),
                                                   out=output_file)
-        
+
         self.progress.emit(stdout.decode('utf-8'))
         self.progress.emit("rc = {}".format(rc))
-        if rc == 0:
-            self.finished.emit(f'Docking job completed successfully. The poses can be loaded from {output_file}')
-        else:
-            self.finished.emit("ERRROR: {}".format(stderr.decode('utf-8')))
 
-    def multiple_ligand_docking(self, ligands_to_dock):
-        """ TODO """
+        return rc, stdout, stderr
+
+    def multiple_ligand_docking(self, ligands_to_dock, receptor):
+
+        """ Function responsible for running docking with multiple ligands. """
         # self.logger.error("Multiple ligand docking not implemented yet!")
         adContext = ADContext()
+        flex_docking = True
+        ligands_pdbqt = list(map(get_pdbqt, list(ligands_to_dock.values())))
 
-        return
+        if len(receptor.flexible_residues) == 0:
+            flex_docking = False
+
+        if flex_docking:
+            rigid_receptor = receptor.rigid_pdbqt
+            flex_receptor = receptor.flex_pdbqt
+            if flex_receptor is not None and rigid_receptor is not None:
+                output_file = "vina_multidock_result_{}_flexible.pdbqt".format(receptor.name)
+                (rc, stdout, stderr) = adContext.vina(receptor=rigid_receptor,
+                                                      flex=flex_receptor,
+                                                      ligand=ligands_pdbqt,
+                                                      config=adContext.config['box_path'],
+                                                      exhaustiveness=int(adContext.config['dockingjob_params'][
+                                                                             'exhaustiveness']),
+                                                      out=output_file)
+
+            else:
+                self.finished.emit('An error occurred while processing rigid and flexible structures!')
+                return
+        else:
+            output_file = "vina_result_{}.pdbqt".format(receptor.name)
+            (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
+                                                  ligand=ligands_pdbqt,
+                                                  config=adContext.config['box_path'],
+                                                  exhaustiveness=int(adContext.config['dockingjob_params'][
+                                                                         'exhaustiveness']),
+                                                  out=output_file)
+
+        return rc, stdout, stderr
 
 # sample_command = f'vina --receptor {rigid_receptor} \ --flex {flex_receptor} --ligand {
 # ligand_to_dock.pdbqt} \ --config {box_path} \ --exhaustiveness {exhaustiveness} --out

@@ -129,17 +129,24 @@ def make_dialog():
         form.ligands_lstw.clear()
         ligand_names = [lig_id for lig_id in adContext.ligands.keys()]
         form.ligands_lstw.addItems(ligand_names)
-        # onPreparedLigandChange()
+
+        logger.info("Updated ligand list widget!")
 
     def onPreparedLigandChange():
-
+        """ Callback called when a ligand is added or prepared, or when a prepared_ligand is imported. Whenever there
+        is an action with a ligand, this function is called, and if it happens that the ligand on which was acted
+        is prepared, the corresponding units will respond. """
         form.preparedLigands_lstw.clear()
         form.preparedLigands_lstw_2.clear()
         prepared_ligands_names = [lig_id for lig_id in adContext.ligands.keys() if
                                   adContext.ligands[lig_id].isPrepared()]
 
-        logger.info(
-            f'onPreparedLigandChange() talking: List of prepared_ligands as observed by me is {prepared_ligands_names}')
+        logger.debug(
+            "onPreparedLigandChange() talking: List of prepared_ligands as observed by me is {}')"
+            .format(prepared_ligands_names)
+        )
+
+        logger.info("Updated prepared ligands list widget!")
 
         form.preparedLigands_lstw.addItems(prepared_ligands_names)
         form.preparedLigands_lstw_2.addItems(prepared_ligands_names)
@@ -153,6 +160,7 @@ def make_dialog():
     adContext.register_callback(printRecChange)
     adContext.register_callback(onLoadedReceptorChanged)
     adContext.register_ligand_callback(onLigandChanged)
+    adContext.register_ligand_callback(onPreparedLigandChange)
 
     # adContext.add_callback(onLigandToDockAdded, '_ligandondock_callbacks')
 
@@ -305,38 +313,20 @@ def make_dialog():
 
     def OnAddLigandClicked():
         selected_ligands = form.sele_lstw_2.selectedItems()
-        logger.debug(f'Ligands to be added are: {selected_ligands}')
-        for index, sele in enumerate(selected_ligands):
-            ligand = Ligand(sele.text(), '', onPrepared=onPreparedLigandChange)
-            adContext.addLigand(ligand)
+        ligandController = LigandJobController(form)
+        ligandController.add_ligands(selected_ligands)
 
-        logger.debug(adContext.ligands)
         form.sele_lstw_2.clearSelection()
 
     def load_ligand():
-        ligand_pdb_path = form.ligandPath_txt.text().strip()
-
-        if ligand_pdb_path.split('.') == 'pdbqt':
-            logger.error(f'PDBQTs not accepted here!')
-            # return
-
-        ligand_name = ligand_pdb_path.split('/')[-1].split('.')[0]
-
-        ligand = Ligand(ligand_name, ligand_pdb_path, onPrepared=onPreparedLigandChange)
-        ligand.fromPymol = False
-        adContext.addLigand(ligand)
-        cmd.load(ligand_pdb_path, object=ligand_name)
+        ligand_path = form.ligandPath_txt.text().strip()
+        ligandController = LigandJobController(form)
+        ligandController.load_ligand(ligand_path)
 
     def load_prepared_ligand():
         prepared_ligand_path = form.preparedLigand_txt.text().strip()
-        prepared_ligand_name = prepared_ligand_path.split('/')[-1].split('.')[0]
-
-        ligand = Ligand(prepared_ligand_name, '')
-        ligand.pdbqt = prepared_ligand_path
-        ligand.fromPymol = False
-        ligand.prepared = True
-        adContext.addLigand(ligand)
-        cmd.load(prepared_ligand_path, object=prepared_ligand_name)
+        ligandController = LigandJobController(form)
+        ligandController.load_prepared_ligand(prepared_ligand_path)
 
     def load_receptor():
         receptor_pdb_path = form.receptorPath_txt.text().strip()
@@ -354,9 +344,8 @@ def make_dialog():
 
     def remove_ligand():
         selection = form.ligands_lstw.selectedItems()
-        for index, item in enumerate(selection):
-            adContext.removeLigand(item.text())
-            # TODO: remove foreign ligand from pymol (optional)
+        ligandController = LigandJobController(form)
+        ligandController.remove_ligands(selection)
 
     def update_receptor_list():
         form.receptor_lstw.clear()
@@ -410,7 +399,7 @@ def make_dialog():
     def onSelectLigandToDock(item):
         """ Sets ADContext ligand to dock (not useful right now, if multiple ligands supported) """
         adContext.setLigandToDock(adContext.ligands[item.text()])
-        logger.info(f'Ligand to dock is: {adContext.ligand_to_dock.name} at {adContext.ligand_to_dock.pdbqt}')
+        logger.info("Ligand to dock is: {} at {}".format(adContext.ligand_to_dock.name, adContext.ligand_to_dock.pdbqt))
 
     def update_flexible_list():
         form.flexRes_lstw.clear()
@@ -433,7 +422,6 @@ def make_dialog():
         adContext.config['vinaPath'] = vinaPath
         adContext.config['configPath'] = configPath
 
-    # TODO: make them accept directory paths, not only files
     def OnBrowseADFRClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['adfr_path'] = dir_name
