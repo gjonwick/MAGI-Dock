@@ -45,6 +45,7 @@ class RigidReceptorController(BaseController):
                 self.logger.error(
                     'Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
                 return
+            adContext.prepare_receptor.attach_logger(self.logger)
 
         # os.path.expanduser("~")
         with while_in_dir(working_dir):
@@ -62,7 +63,7 @@ class RigidReceptorController(BaseController):
             self.logger.debug(f"Return code = {rc}")
 
             if stdout is not None:
-                self.logger.debug(f"{stdout.decode('utf-8')}")
+                self.logger.debug(f"{stdout}") #.decode('utf-8')
 
             if rc == 0:
                 receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
@@ -106,6 +107,7 @@ class FlexibleReceptorController(BaseController):
             self.logger.error('Please generate the receptor first!')
             return
 
+        # XXX: there was an error trying to generate only 1 flexible residue
         # TODO: encapsulate, get selected residues
         sele = sele[0].text()
         stored.flexible_residues = []
@@ -148,7 +150,7 @@ class FlexibleReceptorController(BaseController):
             # command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
             # result, output = getStatusOutput(command)
             if stdout is not None:
-                self.logger.debug(f"{stdout.decode('utf-8')}")
+                self.logger.debug(f"{stdout}") # .decode('utf-8')
 
             if rc == 0:
 

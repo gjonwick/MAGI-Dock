@@ -47,6 +47,10 @@ class LigandJobController(BaseController):
     def load_prepared_ligand(self, prepared_ligand_path):
         adContext = ADContext()
         prepared_ligand_name = prepared_ligand_path.split('/')[-1].split('.')[0]
+        extension = prepared_ligand_path.split('.')[1]
+        if extension != 'pdbqt':
+            self.logger.error("Please select a .pdbqt file!")
+            return
 
         ligand = Ligand(prepared_ligand_name, '')
         ligand.pdbqt = prepared_ligand_path
@@ -103,10 +107,9 @@ class LigandJobController(BaseController):
 
         working_dir = adContext.config['working_dir']
         with while_in_dir(working_dir):
-
-            # prep_command = 'prepare_ligand'
-            # if form.checkBox_hydrogens.isChecked():
-            #     suffix = '-A checkhydrogens'
+            arg_dict = {}
+            if form.checkBox_hydrogens.isChecked():
+                arg_dict.update(A='checkhydrogens')
 
             for index, ligand_selection in enumerate(ligand_selection):
                 ligand_name = ligand_selection.text()
@@ -123,13 +126,14 @@ class LigandJobController(BaseController):
                 else:
                     ligand_pdb = ligand.pdb
 
-                ligand_pdbqt = os.path.join(working_dir, f'ad_binding_test_ligand{ligand_name}.pdbqt')
+                ligand_pdbqt = os.path.join(working_dir, "ad_binding_test_ligand{}.pdbqt".format(ligand_name))
                 ligand.pdbqt = ligand_pdbqt
 
-                (rc, stdout, stderr) = adContext.prepare_ligand(l=ligand_pdb, o=ligand_pdbqt)
+                arg_dict.update(l=ligand_pdb, o=ligand_pdbqt)
+                (rc, stdout, stderr) = adContext.prepare_ligand(**arg_dict)
 
-                if stdout is not None:
-                    self.logger.debug(f"{stdout.decode('utf-8')}")
+                # if stdout is not None:
+                #     self.logger.debug(f"{stdout.decode('utf-8')}")
 
                 if rc == 0:
                     ligand.prepare()
@@ -138,3 +142,4 @@ class LigandJobController(BaseController):
                     self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
                 else:
                     self.logger.info(f'An error occurred while trying to prepare the ligand ...')
+                    #self.logger.error(stderr.decode('utf-8'))

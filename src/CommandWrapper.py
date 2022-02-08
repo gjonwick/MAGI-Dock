@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import logging  # TODO: rethink this
 from src.decorators import debug_logger
 
 
@@ -14,7 +15,14 @@ class CustomCommand(object):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
+        self.logger = None
+        self.signal = None
 
+    def attach_logger(self, logger):
+        self.logger = logger
+
+    def attach_signal(self, signal):
+        self.signal = signal
 
     def execute(self, *args, **kwargs):
         print(f'SUPPLIED: *args = [{args}], **kwargs = [{kwargs}]')
@@ -57,13 +65,36 @@ class CustomCommand(object):
         print(f'Just before buildingProcess ... ')
         try:
             p = self.buildProcess(*args, **kwargs)
-            out, err = p.communicate()  # pass if input will be used here
-        except:
+            #out, err = p.communicate()  # pass if input will be used here
+
+            stdout = []
+            stderr = []
+
+            with p.stdout:
+                for line in iter(p.stdout.readline, b''):
+                    stdout.append(line.decode('utf-8'))
+                    if self.logger is not None:
+                        self.logger.info(line.decode('utf-8'))
+                    if self.signal is not None:
+                        self.signal.emit(line.decode('utf-8'))
+
+            with p.stderr:
+                for line in iter(p.stderr.readline, b''):
+                    stderr.append(line.decode('utf-8'))
+                    if self.logger is not None:
+                        self.logger.info('Error:' + line.decode('utf-8'))
+                    if self.signal is not None:
+                        self.signal.emit(line.decode('utf-8'))
+
+            p.wait()
+
+        except Exception:
             raise
 
-        rc = p.returncode
-        print(f'Command ran: {p.args}')
-        return (rc, out, err), p
+        #rc = p.returncode
+        rc = p.poll()
+        print("Command ran: {}".format(p.args))
+        return (rc, ''.join(stdout), ''.join(stderr)), p
 
     def buildProcess(self, *args, **kwargs):
 
@@ -72,8 +103,7 @@ class CustomCommand(object):
         print(f'Inside buildProcess; the command to be run: {cmd}')
         try:
             p = PopenWithInput(cmd)
-
-        except:
+        except Exception:
             print(f'Error setting up the command')
             raise
 
@@ -118,12 +148,18 @@ class CustomCommand(object):
                 raise ValueError('False value detected!')
 
             if option[:2] == '--':
-                options.append(f'{option}={str(value)}')  # GNU style e.g. --output="blabla.txt"
+                if isinstance(value, list):
+                    print(value)
+                    options = options + [option] + value
+                    print(options)
+                else:
+                    options.append(option + '=' + str(value))  # GNU style e.g. --output="blabla.txt"
             else:
                 options.extend((option, str(value)))  # POSIX style e.g. -o "blabla.txt"
 
         print(f'Options = {options} and args = {list(args)}')
         print(f'Returning from prepare_args with cmd = {options + list(args)}')
+
         return options + list(args)  # append the positional arguments
 
     '''

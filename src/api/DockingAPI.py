@@ -4,10 +4,20 @@ import logging
 from src.utils.util import while_in_dir
 from src.api.BaseController import BaseController
 from typing import Any
+import os
 
 
 def get_pdbqt(ligand):
     return ligand.pdbqt
+
+
+def run_flex_docking(ligands, receptor, output_file):
+    pass
+
+
+def run_rigid_docking(ligand, receptor, output_file):
+    pass
+
 
 class DockingJobController(BaseController):
 
@@ -21,6 +31,17 @@ class DockingJobController(BaseController):
                             destination=self.form.dockingLogBox)
 
     def run(self):
+        adContext = ADContext()
+        # make sure tools are loaded; do the check here, because there's no point of calling the thread
+        # if there is no tool to perform the job
+        if not adContext.vina_tools_loaded:
+            tools = adContext.load_vina_tools()
+            if tools is None:
+                self.logger.error('Vina tools could not be loaded! Please specify the correct path, or load the '
+                                  'respective modules!')
+                return
+
+
         form = self.form
         form.runDocking_btn.setEnabled(False)
 
@@ -57,17 +78,9 @@ class VinaWorker(QtCore.QObject):
 
     def run(self):
         adContext = ADContext()
-
+        adContext.vina.attach_signal(self.progress)
         # get working dir
         working_dir = adContext.config['working_dir']
-
-        # make sure tools are loaded
-        if not adContext.vina_tools_loaded:
-            tools = adContext.load_vina_tools()
-            if tools is None:
-                self.finished.emit('Vina tools could not be loaded! Please specify the correct path, or load the '
-                                   'respective modules!')
-                return
 
         # make sure there are ligands to dock
         ligands_to_dock = adContext.ligands_to_dock
@@ -84,25 +97,35 @@ class VinaWorker(QtCore.QObject):
         case of multiple docking, each ligand will be run on flexible residues if the receptor has flexible residues. 
         If there are ligands to be run with rigid docking, than make sure there is another receptor with rigid residues. 
         """
-        # TODO: an option in the docking tab may be added to run flexible or rigid with the selected ligands on the
-        #  prepared ligands list.
+        # TODO: add an arg_dict to make the command execution more readable
         with while_in_dir(working_dir):
 
             try:
                 if len(ligands_to_dock) == 1:
                     # basic docking
                     ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
-                    self.basic_docking(ligand_to_dock, receptor)
+
+                    (rc, stdout, stderr) = self.basic_docking(ligand_to_dock, receptor)
+
                 else:
+                    self.progress.emit('Preparing for batch docking ... ')
                     # batch docking
-                    self.multiple_ligand_docking(ligands_to_dock, receptor)
+                    (rc, stdout, stderr) = self.batch_docking(ligands_to_dock, receptor)
+
+                self.progress.emit("return code = {}".format(rc))
+                if rc == 0:
+                    self.finished.emit("Success!")
+                    # self.finished.emit(stdout.decode('utf-8'))
+                else:
+                    self.finished.emit("Failed!")
 
             except Exception as e:
-                self.finished.emit(e)
+                self.finished.emit(str(e))
+                return
 
         # # ligands_to_dock = adContext.ligands_to_dock
         #
-        # # ligands_to_dock = ['str'] # NOTE: vina probably supports batch docking with multiple ligands
+        # # ligands_to_dock = ['str'] # NOTE: vina supports batch docking with multiple ligands
         # # ligand = adContext.ligands['str']
         # # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
         # # suffix = receptor.pdbqt_location.split('/')[-1]
@@ -138,7 +161,6 @@ class VinaWorker(QtCore.QObject):
                                                       out=output_file)
 
             else:
-                self.finished.emit('An error occurred while processing rigid and flexible structures!')
                 return
         else:
             output_file = "vina_result_{}.pdbqt".format(receptor.name)
@@ -149,18 +171,64 @@ class VinaWorker(QtCore.QObject):
                                                                          'exhaustiveness']),
                                                   out=output_file)
 
-        self.progress.emit(stdout.decode('utf-8'))
-        self.progress.emit("rc = {}".format(rc))
+        return rc, stdout, stderr
+
+    def batch_docking(self, ligands_to_dock, receptor):
+        adContext = ADContext()
+        flex_docking = True
+        ligands_pdbqt = list(map(get_pdbqt, list(ligands_to_dock.values())))
+        self.progress.emit(str(ligands_pdbqt))
+
+        if len(receptor.flexible_residues) == 0:
+            flex_docking = False
+
+        if flex_docking:
+            rigid_receptor = receptor.rigid_pdbqt
+            flex_receptor = receptor.flex_pdbqt
+            if flex_receptor is not None and rigid_receptor is not None:
+                output_dir = "vina_batch_result_{}_flexible".format(receptor.name)
+                if not os.path.isdir(output_dir):
+                    os.mkdir(output_dir)
+                (rc, stdout, stderr) = adContext.vina(receptor=rigid_receptor,
+                                                      flex=flex_receptor,
+                                                      batch=ligands_pdbqt,
+                                                      config=adContext.config['box_path'],
+                                                      exhaustiveness=int(adContext.config['dockingjob_params'][
+                                                                             'exhaustiveness']),
+                                                      dir=output_dir)
+
+            else:
+                self.system.finished("When running flexible docking please generate the flexible receptor first!")
+                return
+        else:
+            output_dir = "vina_batch_result_{}".format(receptor.name)
+            if not os.path.isdir(output_dir):
+                os.mkdir(output_dir)
+            (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
+                                                  batch=ligands_pdbqt,
+                                                  config=adContext.config['box_path'],
+                                                  exhaustiveness=int(adContext.config['dockingjob_params'][
+                                                                         'exhaustiveness']),
+                                                  dir=output_dir)
 
         return rc, stdout, stderr
 
     def multiple_ligand_docking(self, ligands_to_dock, receptor):
+
+        """
+        Traceback (most recent call last):
+        File "/home/u3701/.pymol/startup/MAGI-Dock/src/api/DockingAPI.py", line 108, in run
+            self.finished.emit(e)
+        TypeError: VinaWorker.finished[str].emit(): argument 1 has unexpected type 'TypeError'
+    
+        """
 
         """ Function responsible for running docking with multiple ligands. """
         # self.logger.error("Multiple ligand docking not implemented yet!")
         adContext = ADContext()
         flex_docking = True
         ligands_pdbqt = list(map(get_pdbqt, list(ligands_to_dock.values())))
+        self.progress.emit(str(ligands_pdbqt))
 
         if len(receptor.flexible_residues) == 0:
             flex_docking = False
@@ -179,10 +247,9 @@ class VinaWorker(QtCore.QObject):
                                                       out=output_file)
 
             else:
-                self.finished.emit('An error occurred while processing rigid and flexible structures!')
                 return
         else:
-            output_file = "vina_result_{}.pdbqt".format(receptor.name)
+            output_file = "vina_multidock_result_{}.pdbqt".format(receptor.name)
             (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
                                                   ligand=ligands_pdbqt,
                                                   config=adContext.config['box_path'],

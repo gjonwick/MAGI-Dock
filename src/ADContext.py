@@ -35,13 +35,17 @@ class ADContext:
             self._ligandondock_callbacks = []
             self.ad_tools_loaded = False
             self.vina_tools_loaded = False
-            self.config = {'vina_path': None, 'adfr_path': None, 'mgl_path': None, 'box_path': None,
+            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_path': None, 'box_path': None,
                            'dockingjob_params': {
                                'exhaustiveness': 32,
                                'n_poses': 9,
                                'min_rmsd': 1.0,
                                'max_evals': 0},
                            'working_dir': os.getcwd()}
+            self.tools_path = {
+                'win': "/...",
+                'linux': "/MGLToolsPckgs/AutoDockTools/Utilities24"
+            }
             self.ligand_to_dock = None
             self.ad_command_list = ['prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
             self.vina_command_list = ['vina']
@@ -54,8 +58,8 @@ class ADContext:
             AD_MODULE_LOADED = module_loaded('ADFRsuite') and module_loaded('mgltools')
 
             if not AD_MODULE_LOADED:
-                if self.config['mgl_path'] is None:
-                    print('ADContext here: mgl_path not specified, returning')
+                if self.config['ad_tools_path'] is None:
+                    print('ADContext here: AutoDockTools path not specified, returning')
                     return None
 
             for command_name in self.ad_command_list:

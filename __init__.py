@@ -332,7 +332,7 @@ def make_dialog():
         receptor_pdb_path = form.receptorPath_txt.text().strip()
         if receptor_pdb_path.split('.')[1] != 'pdbqt':
             logger.info('The receptor must be in pdbqt format!')
-            # return
+            return
 
         receptor_name = receptor_pdb_path.split('/')[-1].split('.')[0]
 
@@ -381,6 +381,7 @@ def make_dialog():
     def OnRunDockingJobClicked():
         # Notify adContext about the ligands the user wishes to be docked
         selectedLigands = form.preparedLigands_lstw_2.selectedItems()
+        adContext.ligands_to_dock.clear()
         for index, sele in enumerate(selectedLigands):
             ligand = adContext.ligands[sele.text()]
             adContext.ligands_to_dock[sele.text()] = ligand
@@ -424,14 +425,14 @@ def make_dialog():
 
     def OnBrowseADFRClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
-        adContext.config['adfr_path'] = dir_name
-        logger.info(f'adfr_path = {dir_name}')
+        adContext.config['ad_tools_path'] = dir_name
+        logger.info("ad_tools_path = {}".format(dir_name))
         form.adfrPath_txt.setText(dir_name)
 
     def OnBrowseMGLClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['mgl_path'] = dir_name
-        logger.info(f'mgl_path = {dir_name}')
+        logger.info("mgl_path = {}".format(dir_name))
         form.mglPath_txt.setText(dir_name)
 
     def OnBrowseVinaClicked():

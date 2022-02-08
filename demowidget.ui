@@ -820,6 +820,22 @@
       <string>Receptor console:</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="pushButton">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>320</x>
+       <y>340</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Remove</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="ligands_tab">
     <attribute name="title">
@@ -1090,6 +1106,9 @@
      </property>
      <property name="toolTipDuration">
       <number>3</number>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
      </property>
     </widget>
     <widget class="QLabel" name="label_18">

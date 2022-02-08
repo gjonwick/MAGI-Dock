@@ -81,8 +81,8 @@ class BoxAPI:
             f.write("size_y = " + str(box.dim.y) + '\n')
             f.write("size_z = " + str(box.dim.z) + '\n')
 
-            if vinaOutput != '':
-                f.write("out = " + vinaOutput + '\n')
+            # if vinaOutput != '':
+            #     f.write("out = " + vinaOutput + '\n')
 
     # TODO: handle the case when the name changes
     # Explicit function to render and hide the box (why not?)
