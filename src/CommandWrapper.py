@@ -1,7 +1,6 @@
 import subprocess
 import sys
-import logging  # TODO: rethink this
-from src.decorators import debug_logger
+from src.log.LoggingModule import LoggingModule
 
 
 class CustomCommand(object):
@@ -15,14 +14,10 @@ class CustomCommand(object):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        self.logger = None
-        self.signal = None
+        self.logging_module = None
 
-    def attach_logger(self, logger):
-        self.logger = logger
-
-    def attach_signal(self, signal):
-        self.signal = signal
+    def attach_logging_module(self, logging_module: LoggingModule):
+        self.logging_module = logging_module
 
     def execute(self, *args, **kwargs):
         print(f'SUPPLIED: *args = [{args}], **kwargs = [{kwargs}]')
@@ -70,21 +65,18 @@ class CustomCommand(object):
             stdout = []
             stderr = []
 
+            # TODO: replace every logging with: self.messageWrapper.log()
+            # TODO: use an buffer as a subject, and notify the observers (controllers) on every readLine
+            assert(self.logging_module is not None)
             with p.stdout:
                 for line in iter(p.stdout.readline, b''):
                     stdout.append(line.decode('utf-8'))
-                    if self.logger is not None:
-                        self.logger.info(line.decode('utf-8'))
-                    if self.signal is not None:
-                        self.signal.emit(line.decode('utf-8'))
+                    self.logging_module.log(line.decode('utf-8'))
 
             with p.stderr:
                 for line in iter(p.stderr.readline, b''):
                     stderr.append(line.decode('utf-8'))
-                    if self.logger is not None:
-                        self.logger.info('Error:' + line.decode('utf-8'))
-                    if self.signal is not None:
-                        self.signal.emit(line.decode('utf-8'))
+                    print(line.decode('utf-8'))
 
             p.wait()
 

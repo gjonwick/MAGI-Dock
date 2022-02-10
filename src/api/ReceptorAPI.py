@@ -1,12 +1,10 @@
 from src.ADContext import ADContext
 from pymol import cmd
-import os
 from src.Entities.Receptor import Receptor
+from src.log.LoggingModule import LoggerAdapter
 from src.utils.util import *
 from src.log.Logger import *
-from src.ad import AutoDock
 from src.api.BaseController import BaseController
-from typing import Any
 
 
 class RigidReceptorController(BaseController):
@@ -45,7 +43,6 @@ class RigidReceptorController(BaseController):
                 self.logger.error(
                     'Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
                 return
-            adContext.prepare_receptor.attach_logger(self.logger)
 
         # os.path.expanduser("~")
         with while_in_dir(working_dir):
@@ -57,7 +54,7 @@ class RigidReceptorController(BaseController):
 
             """ Alternative way, here ADContext is responsible for running the ad module commands
                 and for checking if the config is ok. """
-
+            adContext.prepare_receptor.attach_logging_module(LoggerAdapter(self.logger))
             (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
             print(f'Return code = {rc}')
             self.logger.debug(f"Return code = {rc}")
@@ -146,6 +143,7 @@ class FlexibleReceptorController(BaseController):
             self.logger.info(f'Generating flexible residues ... {res_string}')
             print(f'Generating flexible residues ... {res_string}')
 
+            adContext.prepare_flexreceptor.attach_logging_module(LoggerAdapter(self.logger))
             (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string)
             # command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
             # result, output = getStatusOutput(command)

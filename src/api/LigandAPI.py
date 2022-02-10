@@ -1,5 +1,6 @@
 from src.ADContext import ADContext
 from pymol import cmd
+from pymol.Qt import QtCore
 import os
 import logging
 from src.Entities.Ligand import Ligand
@@ -7,11 +8,13 @@ from src.api.BaseController import BaseController
 from src.utils.util import *
 from src.log.Logger import LoggerFactory
 from src.decorators import *
+from src.log.LoggingModule import LoggerAdapter
 
 """ LigandJobController may be responsible for different ligand actions (add, loading, and preparing). """
 
 
 # TODO: CRUD code may be wrapped into a "DAO" object
+# TODO: make this a worker, and use threads
 class LigandJobController(BaseController):
 
     def __init__(self, form=None, callbacks=None):
@@ -130,6 +133,7 @@ class LigandJobController(BaseController):
                 ligand.pdbqt = ligand_pdbqt
 
                 arg_dict.update(l=ligand_pdb, o=ligand_pdbqt)
+                adContext.prepare_ligand.attach_logging_module(LoggerAdapter(self.logger))
                 (rc, stdout, stderr) = adContext.prepare_ligand(**arg_dict)
 
                 # if stdout is not None:
@@ -137,9 +141,40 @@ class LigandJobController(BaseController):
 
                 if rc == 0:
                     ligand.prepare()
-                    adContext.signalLigandAction() # TODO: can be fixed by returning a "signal" and the main class
+                    adContext.signalLigandAction()  # TODO: can be fixed by returning a "signal" and the main class
                     # will fire the callbacks
                     self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
                 else:
                     self.logger.info(f'An error occurred while trying to prepare the ligand ...')
-                    #self.logger.error(stderr.decode('utf-8'))
+                    # self.logger.error(stderr.decode('utf-8'))
+
+
+class LigandController(BaseController):
+
+    def __init__(self, form=None, callbacks=None):
+        super(LigandController, self).__init__(form, callbacks)
+
+    def _get_logger(self):
+        return self.loggerFactory \
+            .giff_me_logger(name=__name__,
+                            level=logging.DEBUG,
+                            destination=self.form.dockingLogBox)
+
+    def run(self):
+        adContext = ADContext()
+
+        if not adContext.ad_tools_loaded:
+            tools = adContext.load_ad_tools()
+            if tools is None:
+                self.logger.error('AutoDock tools could not be loaded! Please specify the correct path, or load the '
+                                  'respective modules!')
+                return
+
+        form = self.form
+        form.genLigands_btn.setEnabled(False)
+
+        # Create the pool of threads
+
+        # Execute each thread
+
+        # After each thread is finished, set genLigands_btn as Enabled

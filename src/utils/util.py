@@ -104,7 +104,6 @@ def find_executables(path):
 
     return execs
 
-
 class dotdict(dict):
     """ Convenient class to represent dictionaries in a dotted format """
     __getattr__ = dict.get

@@ -20,6 +20,8 @@ If you prepared a ligand, ADContext will know it!
     ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both 
     receptors and ligands as they wish) XXX:form - XXX:not needed """
 
+# TODO: what if many threads have to access the same tool? that's what threads do ...
+
 
 class ADContext:
     class __ADContext:

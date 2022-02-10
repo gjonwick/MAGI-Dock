@@ -1,6 +1,8 @@
 from pymol.Qt import QtCore
 from src.ADContext import ADContext
 import logging
+
+from src.log.LoggingModule import SignalAdapter
 from src.utils.util import while_in_dir
 from src.api.BaseController import BaseController
 from typing import Any
@@ -41,7 +43,6 @@ class DockingJobController(BaseController):
                                   'respective modules!')
                 return
 
-
         form = self.form
         form.runDocking_btn.setEnabled(False)
 
@@ -78,7 +79,8 @@ class VinaWorker(QtCore.QObject):
 
     def run(self):
         adContext = ADContext()
-        adContext.vina.attach_signal(self.progress)
+        logging_module = SignalAdapter(self.progress)
+        adContext.vina.attach_logging_module(logging_module)
         # get working dir
         working_dir = adContext.config['working_dir']
 
