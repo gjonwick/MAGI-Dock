@@ -35,6 +35,7 @@ class RigidReceptorController(BaseController):
 
         receptor_pdb = os.path.join(working_dir, f'ad_binding_test_{receptor_name}.pdb')
         receptor_pdbqt = os.path.join(working_dir, f'ad_binding_test_{receptor_name}.pdbqt')
+        receptor_pdb_dir = os.path.dirname(receptor_pdb)
 
         # Better to not use adContext.ad_tools_loaded, in order to distinguish between init load, or couldn't load
         if not adContext.ad_tools_loaded:
@@ -45,17 +46,26 @@ class RigidReceptorController(BaseController):
                 return
 
         # os.path.expanduser("~")
-        with while_in_dir(working_dir):
+        #with while_in_dir(working_dir):
 
-            try:
-                cmd.save(receptor_pdb, receptor_name)
-            except cmd.QuietException:
-                pass
+        try:
+            cmd.save(receptor_pdb, receptor_name)
+        except cmd.QuietException:
+            pass
 
-            """ Alternative way, here ADContext is responsible for running the ad module commands
-                and for checking if the config is ok. """
-            adContext.prepare_receptor.attach_logging_module(LoggerAdapter(self.logger))
+        """ Alternative way, here ADContext is responsible for running the ad module commands
+            and for checking if the config is ok. """
+        adContext.prepare_receptor.attach_logging_module(LoggerAdapter(self.logger))
+
+        with while_in_dir(receptor_pdb_dir) as f: # because autodock can't see files in other directories ...
+            
+            # check if we were able to change directory
+            if not f[0]:
+                self.signals.error.emit(f[1])
+                return
+
             (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
+
             print(f'Return code = {rc}')
             self.logger.debug(f"Return code = {rc}")
 
@@ -63,9 +73,7 @@ class RigidReceptorController(BaseController):
                 self.logger.debug(f"{stdout}") #.decode('utf-8')
 
             if rc == 0:
-                receptor = Receptor(onReceptorAdded=self.callbacks['onReceptorAdded'])
-                receptor.name = receptor_name
-                receptor.pdbqt_location = receptor_pdbqt
+                receptor = Receptor(receptor_name, receptor_pdbqt, onReceptorAdded=self.callbacks['onReceptorAdded'])
                 adContext.addReceptor(receptor)
                 self.logger.info(f'Receptor pdbqt generated at: {adContext.receptor.pdbqt_location}')
             else:
@@ -132,18 +140,27 @@ class FlexibleReceptorController(BaseController):
 
         working_dir = adContext.config['working_dir']
 
-        with while_in_dir(working_dir):
+        #with while_in_dir(working_dir):
 
-            res_string = adContext.receptor.flexibleResiduesAsString()
-            receptor_pdbqt = adContext.receptor.pdbqt_location
+        res_string = adContext.receptor.flexibleResiduesAsString()
+        receptor_pdbqt = adContext.receptor.pdbqt_location
+        receptor_pdbqt_dir = os.path.dirname(receptor_pdbqt)
 
-            prepare_receptor = 'prepare_flexreceptor.py'
-            # receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
+        prepare_receptor = 'prepare_flexreceptor.py'
+        # receptor_path = os.path.join(WORK_DIR, f'TESTING_RECEPTOR_{receptor}.pdb')
 
-            self.logger.info(f'Generating flexible residues ... {res_string}')
-            print(f'Generating flexible residues ... {res_string}')
+        self.logger.info(f'Generating flexible residues ... {res_string}')
+        print(f'Generating flexible residues ... {res_string}')
 
-            adContext.prepare_flexreceptor.attach_logging_module(LoggerAdapter(self.logger))
+        adContext.prepare_flexreceptor.attach_logging_module(LoggerAdapter(self.logger))
+        
+        with while_in_dir(receptor_pdbqt_dir) as f: # because autodock can't see files in other directories ...
+
+            # check if we were able to change directory
+            if not f[0]:
+                self.signals.error.emit(f[1])
+                return
+                
             (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string)
             # command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
             # result, output = getStatusOutput(command)

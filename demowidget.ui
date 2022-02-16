@@ -18,7 +18,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>../Desktop/Face_colored_cube.png</normaloff>../Desktop/Face_colored_cube.png</iconset>
+    <normaloff>Face_colored_cube.png</normaloff>Face_colored_cube.png</iconset>
   </property>
   <widget class="QDoubleSpinBox" name="centerY">
    <property name="geometry">
@@ -410,7 +410,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>2</number>
    </property>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -771,7 +771,7 @@
       </rect>
      </property>
      <property name="selectionMode">
-      <enum>QAbstractItemView::ExtendedSelection</enum>
+      <enum>QAbstractItemView::SingleSelection</enum>
      </property>
     </widget>
     <widget class="QListWidget" name="receptor_lstw">
@@ -849,6 +849,9 @@
        <width>121</width>
        <height>131</height>
       </rect>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
      </property>
     </widget>
     <widget class="QLabel" name="label_14">
@@ -1081,7 +1084,7 @@
       <rect>
        <x>20</x>
        <y>270</y>
-       <width>181</width>
+       <width>180</width>
        <height>25</height>
       </rect>
      </property>
@@ -1154,22 +1157,6 @@
      </property>
      <property name="text">
       <string>Docked Ligands:</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="addLigandToDock_btn">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>350</x>
-       <y>270</y>
-       <width>71</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Add</string>
      </property>
     </widget>
     <widget class="QPushButton" name="browsePreparedLigand_btn">
@@ -1253,22 +1240,6 @@
       <string>Select</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="removeLigandToDock_btn">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>350</x>
-       <y>300</y>
-       <width>71</width>
-       <height>25</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Remove</string>
-     </property>
-    </widget>
     <widget class="QGroupBox" name="groupBox">
      <property name="geometry">
       <rect>
@@ -1322,6 +1293,19 @@
        <width>561</width>
        <height>320</height>
       </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="runMultipleDocking_btn">
+     <property name="geometry">
+      <rect>
+       <x>210</x>
+       <y>270</y>
+       <width>180</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Run Multiple Docking</string>
      </property>
     </widget>
    </widget>

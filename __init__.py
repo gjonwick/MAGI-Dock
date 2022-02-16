@@ -329,18 +329,18 @@ def make_dialog():
         ligandController.load_prepared_ligand(prepared_ligand_path)
 
     def load_receptor():
-        receptor_pdb_path = form.receptorPath_txt.text().strip()
-        if receptor_pdb_path.split('.')[1] != 'pdbqt':
+        receptor_pdbqt_path = form.receptorPath_txt.text().strip()
+        if receptor_pdbqt_path.split('.')[1] != 'pdbqt':
             logger.info('The receptor must be in pdbqt format!')
             return
 
-        receptor_name = receptor_pdb_path.split('/')[-1].split('.')[0]
+        receptor_name = receptor_pdbqt_path.split('/')[-1].split('.')[0]
 
-        receptor = Receptor(onReceptorAdded=onReceptorAdded)
-        receptor.name = receptor_name
+        receptor = Receptor(receptor_name, receptor_pdbqt_path, onReceptorAdded=onReceptorAdded)
         receptor.fromPymol = False
         adContext.addReceptor(receptor)
-        cmd.load(receptor_pdb_path, object=receptor_name)
+        cmd.load(receptor_pdbqt_path, object=receptor_name)
+        logger.debug("Loaded Receptor = {}".format(adContext.receptor))
 
     def remove_ligand():
         selection = form.ligands_lstw.selectedItems()
@@ -375,8 +375,9 @@ def make_dialog():
         flexibleReceptorController.run()
 
     def OnPrepareLigandsClicked():
+        selectedLigands = form.ligands_lstw.selectedItems()
         ligandController = LigandJobController(form)
-        ligandController.run()
+        ligandController.prepare_ligands(selectedLigands)
 
     def OnRunDockingJobClicked():
         # Notify adContext about the ligands the user wishes to be docked
@@ -523,7 +524,6 @@ def make_dialog():
     form.genLigands_btn.clicked.connect(OnPrepareLigandsClicked)
 
     # form.sele_lstw_2.itemClicked(add_ligand)
-    form.loadLigand_btn.clicked.connect(load_ligand)
     form.loadPreparedLigand_btn.clicked.connect(load_prepared_ligand)
     form.removeLigand_btn.clicked.connect(remove_ligand)
     form.addLigand_btn.clicked.connect(OnAddLigandClicked)

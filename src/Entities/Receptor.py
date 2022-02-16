@@ -11,10 +11,10 @@ import os
 
 class Receptor:
 
-    def __init__(self, onReceptorAdded=None) -> None:
+    def __init__(self, receptor_name=None, receptor_pdbqt=None, onReceptorAdded=None) -> None:
         self.selection = None
-        self.name = None
-        self.pdbqt_location = None
+        self.name = receptor_name
+        self.pdbqt_location = receptor_pdbqt
         self.rigid_pdbqt = None
         self.flex_pdbqt = None
 

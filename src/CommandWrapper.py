@@ -1,6 +1,47 @@
 import subprocess
 import sys
+
 from src.log.LoggingModule import LoggingModule
+from pymol.Qt import QtCore
+
+
+def prepare_args(*args, **kwargs):
+    """ Modify arguments in a format acceptable by Popen.
+    Since Popen doesnt read dictionaries ... i.e. can't read v=True, rather than -v. """
+    options = []
+
+    print(f'Preparing arguments ... ')
+    # pre-process 'dict' arguments
+    for option, value in kwargs.items():
+        print(f'current option = {option}, value = {value}')
+
+        if not option.startswith('-'):
+
+            if len(option) == 1:
+                option = "-{}".format(option)
+            else:
+                option = "--{}".format(option)
+
+        if value is True:
+            # if user inputted ighn=True, then add to arglist -ighn (works for both - and --, # e.g. -o and --output)
+            options.append(option)
+            continue
+        elif value is False:
+            raise ValueError('False value detected!')
+
+        if option[:2] == '--':
+            if isinstance(value, list):
+                print(value)
+                options = options + [option] + value
+                print(options)
+            else:
+                options.append(option + '=' + str(value))  # GNU style e.g. --output="blabla.txt"
+        else:
+            options.extend((option, str(value)))  # POSIX style e.g. -o "blabla.txt"
+
+    print("Returning from prepare_args with cmd = {}".format(options + list(args)))
+
+    return options + list(args)  # append the positional arguments
 
 
 class CustomCommand(object):
@@ -14,34 +55,35 @@ class CustomCommand(object):
     def __init__(self, *args, **kwargs):
         self.args = args
         self.kwargs = kwargs
-        self.logging_module = None
+        self.logging_module = None  # adapter
+        self.p = None
 
     def attach_logging_module(self, logging_module: LoggingModule):
         self.logging_module = logging_module
 
+    def process_finished(self):
+        self.logging_module.log("Process finished,")
+        self.p = None
+
     def execute(self, *args, **kwargs):
-        print(f'SUPPLIED: *args = [{args}], **kwargs = [{kwargs}]')
-        print(f'DEFAULT: *args = [{self.args}], **kwargs = [{self.kwargs}]')
+        print("SUPPLIED: *args = [{}], **kwargs = [{}]".format(args, kwargs))
+        print("DEFAULT: *args = [{}], **kwargs = [{}]".format(self.args, self.kwargs))
 
         _args, _kwargs = self._combine_arglist(args, kwargs)
-        print(f'Combined _args = [{_args}]')
-        print(f'Combined _kwargs = [{_kwargs}]')
 
         results, p = self._run_command(*_args, **_kwargs)
         return results
 
-    '''
-    Combines supplied with defaults, positionals and named seperately, 
-    i.e. 
-    positional with positional,
-    named with named
-    '''
-
     def _combine_arglist(self, args, kwargs):
-        print(f'Combining arguments ... [{self.args}] and [{args}], as well as [{self.kwargs} and {kwargs}]')
+        """ Combines supplied with defaults, positionals and named separately, i.e. positional with positional, named
+        with named. """
+        print("Combining arguments [{}] and [{}], as well as [{} and {}]".format(self.args, args, self.kwargs, kwargs))
         _args = self.args + args
         if sys.version_info < (3, 9, 0):
             _kwargs = {**self.kwargs, **kwargs}
+            # _kwargs = {}
+            # _kwargs.update(self.kwargs)
+            # _kwargs.update(kwargs)
         else:
             _kwargs = self.kwargs | kwargs
         _kwargs.update(kwargs)
@@ -60,14 +102,13 @@ class CustomCommand(object):
         print(f'Just before buildingProcess ... ')
         try:
             p = self.buildProcess(*args, **kwargs)
-            #out, err = p.communicate()  # pass if input will be used here
+            # out, err = p.communicate()  # pass if input will be used here
 
             stdout = []
             stderr = []
 
-            # TODO: replace every logging with: self.messageWrapper.log()
             # TODO: use an buffer as a subject, and notify the observers (controllers) on every readLine
-            assert(self.logging_module is not None)
+            assert (self.logging_module is not None)
             with p.stdout:
                 for line in iter(p.stdout.readline, b''):
                     stdout.append(line.decode('utf-8'))
@@ -83,7 +124,7 @@ class CustomCommand(object):
         except Exception:
             raise
 
-        #rc = p.returncode
+        # rc = p.returncode
         rc = p.poll()
         print("Command ran: {}".format(p.args))
         return (rc, ''.join(stdout), ''.join(stderr)), p
@@ -92,73 +133,30 @@ class CustomCommand(object):
 
         cmd = self._commandline(*args, **kwargs)
         # cmd = [self.command_name] + self.prepare_args(*args, **kwargs)
-        print(f'Inside buildProcess; the command to be run: {cmd}')
+        print("Inside buildProcess; the command to be run: {}".format(cmd))
         try:
             p = PopenWithInput(cmd)
         except Exception:
-            print(f'Error setting up the command')
+            print("Error setting up the command")
             raise
 
         return p
 
-    '''
-    Unifies the command_name and the arguments as a command line
-    Command_name is given during class (tool) creation in tools.py 
-    '''
-
     def _commandline(self, *args, **kwargs):
+        """ Unifies the command_name and the arguments as a command line Command_name is given during class (tool)
+        creation in tools.py. """
+
         print("Inside _commandline; before preparing args!")
         command = self.command_name
-        p_args = self.prepare_args(*args, **kwargs)
-        print(f'Inside _commandline; command = {[command] + p_args}')
+        p_args = prepare_args(*args, **kwargs)
+
         if self.executable is not None:
             return [self.executable, command] + p_args
         return [command] + p_args
 
-    def prepare_args(self, *args, **kwargs):
-        ''' Modify arguments in a format acceptable by Popen.
-        Since Popen doesnt read dictionaries ... i.e. can't read v=True, rather than -v,
-        or output="blabla.txt" rather than --output="blabla.txt" '''
-        options = []
-
-        print(f'Preparing arguments ... ')
-        # pre-process 'dict' arguments
-        for option, value in kwargs.items():
-            print(f'current option = {option}, value = {value}')
-
-            if not option.startswith('-'):
-
-                if len(option) == 1:
-                    option = f'-{option}'
-                else:
-                    option = f'--{option}'
-
-            if value is True:  # e.g. if user inputed ighn=True, then add to arglist -ighn (works for both - and --, e.g. -o and --output)
-                options.append(option)
-                continue
-            elif value is False:
-                raise ValueError('False value detected!')
-
-            if option[:2] == '--':
-                if isinstance(value, list):
-                    print(value)
-                    options = options + [option] + value
-                    print(options)
-                else:
-                    options.append(option + '=' + str(value))  # GNU style e.g. --output="blabla.txt"
-            else:
-                options.extend((option, str(value)))  # POSIX style e.g. -o "blabla.txt"
-
-        print(f'Options = {options} and args = {list(args)}')
-        print(f'Returning from prepare_args with cmd = {options + list(args)}')
-
-        return options + list(args)  # append the positional arguments
-
-    '''
-    Receives execution-time args
-    '''
-
     def __call__(self, *args, **kwargs):
+        """ Receives execution-time args. """
+
         return self.execute(*args, **kwargs)
 
 
@@ -171,7 +169,57 @@ class PopenWithInput(subprocess.Popen):
         super(PopenWithInput, self).__init__(*args, **kwargs, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 
+# class CustomQProcess(QtCore.QProcess):
+#     command_name = None
+#     executable = None
+#
+#     def __init__(self, *args, **kwargs):
+#
+#         super(CustomQProcess, self).__init__()
+#         self.args = args
+#         self.kwargs = kwargs
+#
+#     def _handle_command(self, *args, **kwargs):
+#         _args, _kwargs = self._combine_arglist(args, kwargs)
+#         self._run_command(*_args, **_kwargs)
+#
+#     def _combine_arglist(self, args, kwargs):
+#
+#         _args = self.args + args
+#         if sys.version_info < (3, 9, 0):
+#             _kwargs = {**self.kwargs, **kwargs}
+#         else:
+#             _kwargs = self.kwargs | kwargs
+#         _kwargs.update(kwargs)
+#
+#         return _args, _kwargs
+#
+#     def _run_command(self, *args, **kwargs):
+#         cmd_tuple = self._commandline(*args, **kwargs)
+#         cmd = cmd_tuple[0]
+#         args = cmd_tuple[1]
+#         self.start(cmd, args)
+#
+#     def _commandline(self, *args, **kwargs):
+#
+#         print("Inside _commandline; before preparing args!")
+#         command = self.command_name
+#         p_args = prepare_args(*args, **kwargs)
+#         print(f'Inside _commandline; command = {[command] + p_args}')
+#
+#         if self.executable is not None:
+#             return self.executable, p_args
+#         else:
+#             return command, p_args
+#
+#     def __call__(self, *args, **kwargs):
+#         return self._handle_command(*args, **kwargs)
+
+
 def create_tool(tool_name, command_name, executable=None):
+    """ Here's the whole idea of the CommandWrapper; to wrap up all the argument preparation code and make it reusable
+     for every tool. """
+
     tool_dict = {
         'command_name': command_name,
         'executable': executable
@@ -180,9 +228,19 @@ def create_tool(tool_name, command_name, executable=None):
     return tool
 
 
+# def create_qProcess_tool(tool_name, command_name, executable=None):
+#     tool_dict = {
+#         'command_name': command_name,
+#         'executable': executable
+#     }
+#
+#     tool = type(tool_name, (CustomQProcess,), tool_dict)
+#     return tool
+
+
 def clsname_from_cmdname(cmd_name):
-    """ Just a helper function to get a 'good looking' class name.
-    Removing file extensions, etc. """
+    """ Just a helper function to get a 'good looking' class name. Removing file extensions, etc. """
+
     cls_name = cmd_name
     if '.' in cmd_name:
         cls_name = cmd_name.split('.')[0]

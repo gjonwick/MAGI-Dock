@@ -65,6 +65,11 @@ class ADContext:
                     return None
 
             for command_name in self.ad_command_list:
+                # if command_name == 'ls': # just for testing
+                #     cls_name = clsname_from_cmdname(command_name)
+                #     tools[cls_name.lower()] = create_tool(cls_name, 'ls', None)()
+                #     break
+
                 cls_name = clsname_from_cmdname(command_name)
                 executable = None
                 if not AD_MODULE_LOADED:
@@ -147,8 +152,9 @@ class ADContext:
             self._notify_ligand_observers()
 
         def removeLigand(self, l_id):
-            self.ligands.pop(l_id, None)
-            self._notify_ligand_observers()
+            del self.ligands[l_id]
+            #self.ligands.pop(l_id, None)
+            #self._notify_ligand_observers()
 
         def addReceptor(self, receptor):
             self.receptors[receptor.name] = receptor
