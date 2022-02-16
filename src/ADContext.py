@@ -74,12 +74,10 @@ class ADContext:
                 executable = None
                 if not AD_MODULE_LOADED:
                     if command_name[-3:] == '.py':
-                        full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
-                                                    command_name)
+                        full_command = os.path.join(self.config['ad_tools_path'], command_name)
 
                     else:
-                        full_command = os.path.join(self.config['mgl_path'], 'MGLToolsPckgs/AutoDockTools/Utilities24',
-                                                    command_name + '.py')
+                        full_command = os.path.join(self.config['ad_tools_path'], command_name + '.py')
                     executable = sys.executable
                 else:
                     full_command = command_name

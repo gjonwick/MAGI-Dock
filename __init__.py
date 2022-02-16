@@ -430,11 +430,16 @@ def make_dialog():
         logger.info("ad_tools_path = {}".format(dir_name))
         form.adfrPath_txt.setText(dir_name)
 
-    def OnBrowseMGLClicked():
+    def OnBrowseADToolsClicked():
+        # dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        # adContext.config['mgl_path'] = dir_name
+        # logger.info("mgl_path = {}".format(dir_name))
+        # form.mglPath_txt.setText(dir_name)
+        
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
-        adContext.config['mgl_path'] = dir_name
-        logger.info("mgl_path = {}".format(dir_name))
-        form.mglPath_txt.setText(dir_name)
+        adContext.config['ad_tools_path'] = dir_name
+        logger.info("ad_tools_path = {}".format(dir_name))
+        form.adfrPath_txt.setText(dir_name)
 
     def OnBrowseVinaClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
@@ -463,9 +468,14 @@ def make_dialog():
             form.exhaust_txt.text().strip()) if form.exhaust_txt.text().strip().isnumeric() else 8
         logger.debug(f"Exhaust set to: {adContext.config['dockingjob_params']['exhaustiveness']}")
 
+    def onNumPosesChange():
+        adContext.config['dockingjob_params']['n_poses'] = float(
+            form.numPoses_txt.text().strip()) if form.numPoses_txt.text().strip().isnumeric() else 9
+        logger.debug("Num poses set to {}".format(adContext.config['dockingjob_params']['n_poses']))
+
     # NOTE: doesn't change the environment of the application (i.e. executing cd will not change the current
     # directory, since that is controlled by the os module). Use the app shell, just for simple commands,
-    # i.e. loading modules, checking the currentworking directory, etc.
+    # i.e. loading modules, checking the current working directory, etc.
     # The shell is not connected to the application state (TODO: to be considered in the future)
     def OnShellCommandSubmitted():
         import subprocess, traceback
@@ -538,14 +548,16 @@ def make_dialog():
     form.close_btn.clicked.connect(onCloseWindow)
 
     form.exhaust_txt.textChanged.connect(OnExhaustChange)
+    form.numPoses_txt.textChanged.connect(onNumPosesChange)
 
-    form.browseADFR_btn.clicked.connect(OnBrowseADFRClicked)
-    form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)
+    #form.browseADFR_btn.clicked.connect(OnBrowseADFRClicked)
+    #form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)
+    form.browseADTools_btn.clicked.connect(OnBrowseADToolsClicked)
     form.browseVina_btn.clicked.connect(OnBrowseVinaClicked)
     form.browseConfig_btn.clicked.connect(OnBrowseConfigClicked)
     form.browseWorkDir_btn.clicked.connect(OnBrowseWorkingDirClicked)
 
-    form.saveConfig_btn.clicked.connect(saveConfig)
+    #form.saveConfig_btn.clicked.connect(saveConfig)
 
     form.shellInput_txt.returnPressed.connect(OnShellCommandSubmitted)
 

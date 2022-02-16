@@ -18,7 +18,7 @@ class CustomWidgetLoggingHandler(logging.Handler):
 
 class LoggerFactory:
 
-    def __init__(self, formatter='%(name)s - %(levelname)s - %(message)s'):
+    def __init__(self, formatter="%(asctime)s: %(message)s"):
         self.formatter = formatter
 
     def giff_me_file_logger(self, **kwargs):
@@ -57,6 +57,6 @@ class LoggerFactory:
 
     def _get_handler(self, destination):
         log_handler = CustomWidgetLoggingHandler(destination)
-        log_handler.setFormatter(logging.Formatter(self.formatter))
+        log_handler.setFormatter(logging.Formatter(self.formatter, "%H:%M:%S"))
 
         return log_handler
