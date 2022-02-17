@@ -396,7 +396,7 @@
     <attribute name="title">
      <string>Config</string>
     </attribute>
-    <widget class="QLineEdit" name="mglPath_txt">
+    <widget class="QLineEdit" name="adToolsPath_txt">
      <property name="geometry">
       <rect>
        <x>140</x>
@@ -410,6 +410,9 @@
      </property>
     </widget>
     <widget class="QLineEdit" name="vinaPath_txt">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="geometry">
       <rect>
        <x>140</x>
@@ -609,8 +612,21 @@
        <x>10</x>
        <y>20</y>
        <width>571</width>
-       <height>331</height>
+       <height>281</height>
       </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_19">
+     <property name="geometry">
+      <rect>
+       <x>70</x>
+       <y>350</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>MGL bin:</string>
      </property>
     </widget>
    </widget>

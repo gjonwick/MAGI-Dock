@@ -438,12 +438,14 @@ def make_dialog():
         
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['ad_tools_path'] = dir_name
-        logger.info("ad_tools_path = {}".format(dir_name))
-        form.adfrPath_txt.setText(dir_name)
+        adContext.set_ad_tools_path(dir_name)
+        logger.info("ad_tools_path = {}".format(adContext.ad_tools_path))
+        form.adToolsPath_txt.setText(dir_name)
 
     def OnBrowseVinaClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['vina_path'] = dir_name
+        adContext.set_vina_tools_path(dir_name)
         logger.info(f'vina_path = {dir_name}')
         form.vinaPath_txt.setText(dir_name)
 

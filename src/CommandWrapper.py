@@ -136,8 +136,9 @@ class CustomCommand(object):
         print("Inside buildProcess; the command to be run: {}".format(cmd))
         try:
             p = PopenWithInput(cmd)
-        except Exception:
-            print("Error setting up the command")
+        except Exception as e:
+            print("Error setting up the command! Check if the paths are specified correctly!")
+            self.logging_module.log(str(e))
             raise
 
         return p
@@ -244,4 +245,7 @@ def clsname_from_cmdname(cmd_name):
     cls_name = cmd_name
     if '.' in cmd_name:
         cls_name = cmd_name.split('.')[0]
+    if cls_name[-1].isdigit():
+        cls_name = cls_name[:-1]
+
     return cls_name

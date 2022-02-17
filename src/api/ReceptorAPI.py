@@ -57,14 +57,10 @@ class RigidReceptorController(BaseController):
             and for checking if the config is ok. """
         adContext.prepare_receptor.attach_logging_module(LoggerAdapter(self.logger))
 
-        with while_in_dir(receptor_pdb_dir) as f: # because autodock can't see files in other directories ...
-            
-            # check if we were able to change directory
-            if not f[0]:
-                self.signals.error.emit(f[1])
-                return
+        print(receptor_pdb_dir)
+        with while_in_dir(receptor_pdb_dir): # because autodock can't see files in other directories ...
 
-            (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt)
+            (rc, stdout, stderr) = adContext.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt, A='checkhydrogens')
 
             print(f'Return code = {rc}')
             self.logger.debug(f"Return code = {rc}")
@@ -154,16 +150,10 @@ class FlexibleReceptorController(BaseController):
 
         adContext.prepare_flexreceptor.attach_logging_module(LoggerAdapter(self.logger))
         
-        with while_in_dir(receptor_pdbqt_dir) as f: # because autodock can't see files in other directories ...
-
-            # check if we were able to change directory
-            if not f[0]:
-                self.signals.error.emit(f[1])
-                return
+        with while_in_dir(receptor_pdbqt_dir): # because autodock can't see files in other directories ...
                 
             (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string)
-            # command = f'{prepare_receptor} -r {receptor_pdbqt} -s {res_string}'
-            # result, output = getStatusOutput(command)
+
             if stdout is not None:
                 self.logger.debug(f"{stdout}") # .decode('utf-8')
 

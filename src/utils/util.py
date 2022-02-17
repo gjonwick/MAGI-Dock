@@ -7,7 +7,8 @@ def touch(filename):
     with open(filename, 'a'):
         pass
 
-#TODO: maybe yield the working dir
+
+# TODO: maybe yield the working dir
 @contextmanager
 def while_in_dir(destination_dir, create=True):
     """ Convenient function to execute stuff inside a directory. Yields the success status, and the err message if
@@ -50,20 +51,6 @@ def execute_command(command):
     return p.returncode, output
 
 
-def getStatusOutput(command):
-    MODULE_UNLOADED = False
-    from subprocess import Popen, PIPE, STDOUT
-    import os, sys
-    env = dict(os.environ)
-    args = command.split()
-    if args[0].endswith('.py') and MODULE_UNLOADED:
-        args.insert(0, sys.executable)
-    p = Popen(args, stdout=PIPE, stderr=STDOUT, stdin=PIPE, env=env)
-    print(args)
-    output = p.communicate()[0]
-    return p.returncode, output
-
-
 """ Helper code to deal with environment modules. """
 
 
@@ -72,6 +59,11 @@ def get_loaded_modules():
     if m:
         return os.environ['LOADEDMODULES'].split(':')
     return None
+
+
+def in_path(executable_name):
+    import shutil
+    return shutil.which(executable_name) is not None
 
 
 def module_loaded(module_name):
@@ -103,6 +95,7 @@ def find_executables(path):
             execs.append(exe)
 
     return execs
+
 
 class dotdict(dict):
     """ Convenient class to represent dictionaries in a dotted format """

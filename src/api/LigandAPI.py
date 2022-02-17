@@ -86,72 +86,6 @@ class LigandJobController(BaseController):
             # TODO: remove foreign ligand from pymol (optional)
         adContext.signalLigandAction()
 
-    '''
-       Generates pdbqt files for the ligands
-
-       1. save the molecule as pdb
-       2. run prepare ligand to generate pdbqt
-    '''
-
-    # "button" callbacks TODO: use the ligand fromPymol flag to distinguish which ligand to choose (the one from the
-    #  file, or the one from pymol)
-    # @info_logger
-    def prepare(self):
-        # TODO: when ligand is already prepared, what to do?
-        adContext = self.adContext
-        form = self.form
-        ligand_selection = form.ligands_lstw.selectedItems()
-
-        SUCCESS_FLAG = True
-        suffix = ''
-
-        if not adContext.ad_tools_loaded:
-            tools = adContext.load_ad_tools()
-            if tools is None:
-                self.logger.error(
-                    'Could not load AutoDock tools! Please specify the paths, or load the respective modules!')
-                return
-
-        working_dir = adContext.config['working_dir']
-        with while_in_dir(working_dir):
-            arg_dict = {}
-            if form.checkBox_hydrogens.isChecked():
-                arg_dict.update(A='checkhydrogens')
-
-            for index, ligand_selection in enumerate(ligand_selection):
-                ligand_name = ligand_selection.text()
-                ligand = adContext.ligands[ligand_name]
-                self.logger.debug(f'Currently at ligand from ligand_lstw {ligand_name}')
-                if ligand.fromPymol:
-                    ligand_pdb = os.path.join(working_dir, f'ad_binding_test_ligand{ligand_name}.pdb')
-                    self.logger.debug(f'Generating pdb {ligand_pdb} for ligand {ligand.name}')
-                    ligand.pdb = ligand_pdb
-                    try:
-                        cmd.save(ligand_pdb, ligand_name)
-                    except cmd.QuietException:
-                        pass
-                else:
-                    ligand_pdb = ligand.pdb
-
-                ligand_pdbqt = os.path.join(working_dir, "ad_binding_test_ligand{}.pdbqt".format(ligand_name))
-                ligand.pdbqt = ligand_pdbqt
-
-                arg_dict.update(l=ligand_pdb, o=ligand_pdbqt)
-                adContext.prepare_ligand.attach_logging_module(LoggerAdapter(self.logger))
-                (rc, stdout, stderr) = adContext.prepare_ligand(**arg_dict)
-
-                # if stdout is not None:
-                #     self.logger.debug(f"{stdout.decode('utf-8')}")
-
-                if rc == 0:
-                    ligand.prepare()
-                    adContext.signalLigandAction()  # TODO: can be fixed by returning a "signal" and the main class
-                    # will fire the callbacks
-                    self.logger.info(f'Ligand {ligand.name} pdbqt generated at {ligand.pdbqt}')
-                else:
-                    self.logger.info(f'An error occurred while trying to prepare the ligand ...')
-                    # self.logger.error(stderr.decode('utf-8'))
-
     def prepare_ligands(self, ligand_widget_list):
         adContext = self.adContext
         if len(ligand_widget_list) == 0:
@@ -224,10 +158,13 @@ class PreparationWorker(QtCore.QRunnable):
         self.signals = WorkerSignals()
         self.adContext = ADContext()
         self.working_dir = self.adContext.config['working_dir']
-        logging_module = SignalAdapter(self.signals.progress)
-        self.adContext.ls.attach_logging_module(logging_module)
-        self.adContext.prepare_ligand.attach_logging_module(logging_module)
         self.all_ligands = self.adContext.ligands
+        self._setup_logging()
+
+    def _setup_logging(self):
+        logging_module = SignalAdapter(self.signals.progress)
+        self.adContext.prepare_ligand.attach_logging_module(logging_module)
+
 
     def run(self):
         #adContext = self.adContext
@@ -255,6 +192,10 @@ class PreparationWorker(QtCore.QRunnable):
                 try:
                     (rc, stdout, stderr) = self.adContext.prepare_ligand(**arg_dict)
                     # (rc, stdout, stderr) = adContext.ls('-l')
+                    if rc == 0:
+                        self.signals.success.emit(ligand)
+                    else:
+                        self.signals.error.emit("An error occurred while trying to prepare {}!".format(ligand.name))
                 except Exception as e:
                     s = str(e)
                     self.signals.error.emit(s)
@@ -267,11 +208,6 @@ class PreparationWorker(QtCore.QRunnable):
                 #     time.sleep(delay)
                 #
                 # self.signals.success.emit(ligand)
-
-                if rc == 0:
-                    self.signals.success.emit(ligand)
-                else:
-                    self.signals.error.emit(f'An error occurred while trying to prepare ligand {ligand.name}!')
 
         self.signals.finished.emit('Ran all ligands!')
 
