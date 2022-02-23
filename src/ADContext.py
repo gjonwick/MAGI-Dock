@@ -1,4 +1,4 @@
-# TODO: make it thread safe! Currently the danger responsibilities is lifted from adContext
+# TODO: make it thread safe!
 from src.CommandWrapper import *
 from src.utils.util import *
 
@@ -36,15 +36,22 @@ class ADContext:
             self._ligandondock_callbacks = []
             self.ad_tools_loaded = False
             self.vina_tools_loaded = False
-
+            self.affinity_map = None
+            self.gpf = None
 
             # TODO: remove those from config dict
             self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_path': None, 'box_path': None,
                            'dockingjob_params': {
-                               'exhaustiveness': 32,
+                               'exhaustiveness': 8,
                                'n_poses': 9,
-                               'min_rmsd': 1.0,
-                               'max_evals': 0},
+                               'min_rmsd': 1,
+                               'max_evals': 0,
+                               'scoring': 'vina',
+                               'energy_range': 3
+                                },
+                           'ligandjob_params': {
+                               'ph': None
+                           },
                            'working_dir': os.getcwd()}
             self.tools_path = {
                 'win': "/...",
@@ -76,8 +83,14 @@ class ADContext:
                     print('ADContext here: AutoDockTools path not specified, returning')
                     return None
 
+                if in_path('autogrid4'):
+                    cls_name = clsname_from_cmdname('autogrid4')
+                    tools[cls_name.lower()] = create_tool(cls_name, 'autogrid4', None)()
+
                 for command_name in self._get_ad_tool_names():
                     cls_name = clsname_from_cmdname(command_name)
+                    if cls_name == 'prepare_gpf':
+                        print('PREPARE_GPF LOADED!')
                     full_command = os.path.join(self.config['ad_tools_path'], command_name)
                     tools[cls_name.lower()] = create_tool(cls_name, full_command, None)()
 
@@ -99,7 +112,7 @@ class ADContext:
 
                     else:
                         full_command = os.path.join(self.config['ad_tools_path'], command_name + '.py')
-                    # executable = '/home/jurgen/MGLTools-1.5.6/bin/python'
+
                 else:
                     full_command = command_name
 

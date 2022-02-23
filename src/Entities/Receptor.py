@@ -17,6 +17,7 @@ class Receptor:
         self.pdbqt_location = receptor_pdbqt
         self.rigid_pdbqt = None
         self.flex_pdbqt = None
+        self.gpf = None
 
         self.flexible_path = None
         self.flexible_residues = {}

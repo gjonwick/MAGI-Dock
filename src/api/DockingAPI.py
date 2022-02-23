@@ -2,7 +2,7 @@ from pymol.Qt import QtCore
 from src.ADContext import ADContext
 import logging
 
-from src.log.LoggingModule import SignalAdapter
+from src.log.LoggingModule import SignalAdapter, LoggerAdapter
 from src.utils.util import while_in_dir
 from src.api.BaseController import BaseController
 from typing import Any
@@ -23,8 +23,9 @@ def run_rigid_docking(ligand, receptor, output_file):
 
 class DockingJobController(BaseController):
 
-    def __init__(self, form, callbacks=None):
+    def __init__(self, form, multiple_ligand_docking=False, callbacks=None):
         super(DockingJobController, self).__init__(form, callbacks)
+        self.multiple_ligand_docking = multiple_ligand_docking
 
     def _get_logger(self) -> Any:
         return self.loggerFactory \
@@ -45,9 +46,10 @@ class DockingJobController(BaseController):
 
         form = self.form
         form.runDocking_btn.setEnabled(False)
+        form.runMultipleDocking_btn.setEnabled(False)
 
         form.thread = QtCore.QThread()
-        form.worker = VinaWorker(form)
+        form.worker = VinaWorker(form, self.multiple_ligand_docking)
         form.worker.moveToThread(form.thread)
         form.thread.started.connect(form.worker.run)
         form.worker.finished.connect(form.thread.quit)
@@ -65,17 +67,89 @@ class DockingJobController(BaseController):
 
     def onFinished(self, msg):
         self.form.runDocking_btn.setEnabled(True)
+        self.form.runMultipleDocking_btn.setEnabled(True)
         self.logger.info(msg)
         # self.logger.info("I'm DONE!")
+
+    def generateAffinityMaps(self, selectedLigands):
+        """ Responsible for generating both gpf and affinity maps. """
+
+        adContext = ADContext()
+        receptor = adContext.receptor
+        ligand_name = selectedLigands[0].text()
+        ligand = adContext.ligands[ligand_name]
+
+        if ligand.pdbqt is None:
+            self.logger.error('The selected ligand is not prepared!')
+            return
+
+        adContext.prepare_gpf.attach_logging_module(LoggerAdapter(self.logger))
+        adContext.autogrid.attach_logging_module(LoggerAdapter(self.logger))
+
+        flex_docking = not len(receptor.flexible_residues) == 0
+
+        if flex_docking:
+            saved_receptor_name = receptor.rigid_pdbqt.split('.')[0]
+        else:
+            saved_receptor_name = receptor.pdbqt_location.split('.')[0]
+
+        receptor_gpf = "{}.gpf".format(saved_receptor_name)  # full path here
+        # In order for the receptor to "have" an gpf, it must be "associated" with a ligand.
+        # Everytime we generate a gpf, the file is overridden "with" the new ligand. Rigid pdbqt will be used if
+        # flexible docking.
+        receptor_pdbqt = "{}.pdbqt".format(saved_receptor_name)  # receptor_pdbqt will be the rigid pdbqt if flexible
+
+        try:
+            (rc, stdout, stderr) = adContext.prepare_gpf(l=ligand.pdbqt, r=receptor_pdbqt, o=receptor_gpf,
+                                                         y=True)
+            if rc == 0:
+                receptor.gpf = receptor_gpf
+                self.logger.info("GPF for the {}_{} complex ready!".format(ligand.name, receptor.name))
+            else:
+                self.logger.error("Couldn't generate GPF for the {}_{} complex!".format(ligand.name, receptor.name))
+                return
+
+        except Exception as e:
+            self.logger.error(repr(e))
+            self.logger.error("An error occurred preparing gpf!")
+            return
+
+        receptor_pdbqt_dir = os.path.dirname(receptor_pdbqt)
+        with while_in_dir(receptor_pdbqt_dir):
+            try:
+                (rc, stdout, stderr) = adContext.autogrid(p="{}.gpf".format(saved_receptor_name),
+                                                          l="{}.glg".format(saved_receptor_name))
+                if rc == 0:
+                    self.logger.info("Affinity maps for the {}_{} complex ready!".format(ligand.name, receptor.name))
+                else:
+                    self.logger.error("Could not generate affinity maps for the {}_{} complex!".format(ligand.name,
+                                                                                                       receptor.name))
+            except Exception as e:
+                self.logger.error(str(e))
+                return
 
 
 class VinaWorker(QtCore.QObject):
     finished = QtCore.pyqtSignal(str)
     progress = QtCore.pyqtSignal(str)
 
-    def __init__(self, form):
+    def __init__(self, form, multiple_ligands=False):
         super(VinaWorker, self).__init__()
         self.form = form
+        self.arg_dict = {}
+        self.default_args()
+        self.multiple_ligands = multiple_ligands
+
+    def default_args(self):
+        adContext = ADContext()
+        self.arg_dict.update(
+            exhaustiveness=adContext.config['dockingjob_params']['exhaustiveness'],
+            num_modes=adContext.config['dockingjob_params']['n_poses'],
+            energy_range=adContext.config['dockingjob_params']['energy_range'],
+            min_rmsd=adContext.config['dockingjob_params']['min_rmsd'],
+            scoring=adContext.config['dockingjob_params']['scoring'],
+            config=adContext.config['box_path']
+        )
 
     def run(self):
         adContext = ADContext()
@@ -102,87 +176,106 @@ class VinaWorker(QtCore.QObject):
         # TODO: add an arg_dict to make the command execution more readable
         with while_in_dir(working_dir):
 
-            try:
-                if len(ligands_to_dock) == 1:
-                    # basic docking
-                    ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
+            if len(ligands_to_dock) == 1:
+                # basic docking
+                ligand_to_dock = ligands_to_dock[list(ligands_to_dock.keys())[0]]
 
-                    (rc, stdout, stderr) = self.basic_docking(ligand_to_dock, receptor)
+                # the case with ad4 scoring is different, handle it in a separate function
+                if self.arg_dict['scoring'] == 'ad4':
+                    arg_dict = self.ad_docking(ligand_to_dock, receptor)
+                else:
+                    # (rc, stdout, stderr) = self.basic_docking(ligand_to_dock, receptor)
+                    arg_dict = self.basic_docking(ligand_to_dock, receptor)
 
+            else:
+
+                # batch docking
+                # (rc, stdout, stderr) = self.batch_docking(ligands_to_dock, receptor)
+                if self.multiple_ligands:
+                    self.progress.emit('Preparing for multiple ligand docking ... ')
+                    arg_dict = self.multiple_ligand_docking(ligands_to_dock, receptor)
                 else:
                     self.progress.emit('Preparing for batch docking ... ')
-                    # batch docking
-                    (rc, stdout, stderr) = self.batch_docking(ligands_to_dock, receptor)
+                    arg_dict = self.batch_docking(ligands_to_dock, receptor)
 
+            try:
+                (rc, stdout, stderr) = adContext.vina(**arg_dict)
                 self.progress.emit("return code = {}".format(rc))
                 if rc == 0:
                     self.finished.emit("Success!")
                     # self.finished.emit(stdout.decode('utf-8'))
                 else:
                     self.finished.emit("Failed!")
-
             except Exception as e:
                 self.finished.emit(str(e))
                 return
 
-        # # ligands_to_dock = adContext.ligands_to_dock
-        #
-        # # ligands_to_dock = ['str'] # NOTE: vina supports batch docking with multiple ligands
-        # # ligand = adContext.ligands['str']
-        # # prefix = '/'.join(receptor.pdbqt_location.split('/')[0:-1])
-        # # suffix = receptor.pdbqt_location.split('/')[-1]
-        # # name = '_'.join(suffix.split('.')[0].split('_')[0:-1])
-        #
-        # # for stdout_line in p.stdout.readlines():
-        # #     self.progress.emit(stdout_line)
-        # #     sys.stdout.flush()
-        # # form.plainTextEdit.moveCursor(QtGui.QTextCursor.End)
-        # # p.stdout.close()
-
         self.finished.emit('Done :)')
 
-    def basic_docking(self, ligand, receptor):
-        """ Function responsible for running docking with only 1 ligand. """
-        adContext = ADContext()  # NOTE: (ADContext not yet thread safe)
-        flex_docking = True
+    def ad_docking(self, ligand, receptor):
+        arg_dict = self.arg_dict
+        flex_docking = not len(receptor.flexible_residues) == 0
+        try:
+            receptor_maps_dir = os.path.dirname(receptor.gpf)
+        except Exception as e:
+            self.finished.emit(repr(e))
+            return
 
-        if len(receptor.flexible_residues) == 0:
-            flex_docking = False
+        if flex_docking:
+            rigid_receptor = receptor.rigid_pdbqt
+            saved_rigid_receptor_name = receptor.rigid_pdbqt.split('/')[-1].split('.')[0]
+            flex_receptor = receptor.flex_pdbqt
+            if flex_receptor is not None and rigid_receptor is not None:
+                output_file = "ad_vina_result_{}_flexible.pdbqt".format(receptor.name)
+                with while_in_dir(receptor_maps_dir):
+                    arg_dict.update(flex=flex_receptor,
+                                    ligand=ligand.pdbqt,
+                                    maps=saved_rigid_receptor_name,
+                                    out=output_file)
+        else:
+            saved_receptor_name = receptor.pdbqt_location.split('/')[-1].split('.')[0]
+            output_file = "ad_vina_result_{}.pdbqt".format(receptor.name)
+            with while_in_dir(receptor_maps_dir):
+                arg_dict.update(ligand=ligand.pdbqt,
+                                maps=saved_receptor_name,
+                                out=output_file)
+
+        return arg_dict
+
+    def basic_docking(self, ligand, receptor):
+        """ Function responsible for preparing the options to run docking with only 1 ligand. """
+
+        arg_dict = self.arg_dict
+        flex_docking = not len(receptor.flexible_residues) == 0
 
         if flex_docking:
             rigid_receptor = receptor.rigid_pdbqt
             flex_receptor = receptor.flex_pdbqt
             if flex_receptor is not None and rigid_receptor is not None:
                 output_file = "vina_result_{}_flexible.pdbqt".format(receptor.name)
-                (rc, stdout, stderr) = adContext.vina(receptor=rigid_receptor,
-                                                      flex=flex_receptor,
-                                                      ligand=ligand.pdbqt,
-                                                      config=adContext.config['box_path'],
-                                                      exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                                             'exhaustiveness']),
-                                                      out=output_file)
-
+                arg_dict.update(receptor=rigid_receptor,
+                                flex=flex_receptor,
+                                ligand=ligand.pdbqt,
+                                out=output_file)
             else:
+                self.system.finished("When running flexible docking please generate the flexible receptor first!")
                 return
         else:
             output_file = "vina_result_{}.pdbqt".format(receptor.name)
-            (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
-                                                  ligand=ligand.pdbqt,
-                                                  config=adContext.config['box_path'],
-                                                  exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                                         'exhaustiveness']),
-                                                  out=output_file)
+            arg_dict.update(receptor=receptor.pdbqt_location,
+                            ligand=ligand.pdbqt,
+                            out=output_file)
+        return arg_dict
 
-        return rc, stdout, stderr
-
+    # TODO: vinardo and ad4 scoring functions currently do not work in batch docking
     def batch_docking(self, ligands_to_dock, receptor):
-        adContext = ADContext()
-        flex_docking = True
+        """ Function responsible for preparing the options to run docking in batch mode. """
+
+        arg_dict = self.arg_dict
         ligands_pdbqt = list(map(get_pdbqt, list(ligands_to_dock.values())))
         self.progress.emit(str(ligands_pdbqt))
 
-        if len(receptor.flexible_residues) == 0:
-            flex_docking = False
+        flex_docking = not len(receptor.flexible_residues) == 0
 
         if flex_docking:
             rigid_receptor = receptor.rigid_pdbqt
@@ -191,14 +284,10 @@ class VinaWorker(QtCore.QObject):
                 output_dir = "vina_batch_result_{}_flexible".format(receptor.name)
                 if not os.path.isdir(output_dir):
                     os.mkdir(output_dir)
-                (rc, stdout, stderr) = adContext.vina(receptor=rigid_receptor,
-                                                      flex=flex_receptor,
-                                                      batch=ligands_pdbqt,
-                                                      config=adContext.config['box_path'],
-                                                      exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                                             'exhaustiveness']),
-                                                      dir=output_dir)
-
+                arg_dict.update(receptor=rigid_receptor,
+                                flex=flex_receptor,
+                                batch=ligands_pdbqt,
+                                dir=output_dir)
             else:
                 self.system.finished("When running flexible docking please generate the flexible receptor first!")
                 return
@@ -206,14 +295,10 @@ class VinaWorker(QtCore.QObject):
             output_dir = "vina_batch_result_{}".format(receptor.name)
             if not os.path.isdir(output_dir):
                 os.mkdir(output_dir)
-            (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
-                                                  batch=ligands_pdbqt,
-                                                  config=adContext.config['box_path'],
-                                                  exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                                         'exhaustiveness']),
-                                                  dir=output_dir)
-
-        return rc, stdout, stderr
+            arg_dict.update(receptor=receptor.pdbqt_location,
+                            batch=ligands_pdbqt,
+                            dir=output_dir)
+        return arg_dict
 
     def multiple_ligand_docking(self, ligands_to_dock, receptor):
 
@@ -228,38 +313,31 @@ class VinaWorker(QtCore.QObject):
         """ Function responsible for running docking with multiple ligands. """
         # self.logger.error("Multiple ligand docking not implemented yet!")
         adContext = ADContext()
-        flex_docking = True
+
+        arg_dict = self.arg_dict
+        flex_docking = not len(receptor.flexible_residues) == 0
         ligands_pdbqt = list(map(get_pdbqt, list(ligands_to_dock.values())))
         self.progress.emit(str(ligands_pdbqt))
-
-        if len(receptor.flexible_residues) == 0:
-            flex_docking = False
 
         if flex_docking:
             rigid_receptor = receptor.rigid_pdbqt
             flex_receptor = receptor.flex_pdbqt
             if flex_receptor is not None and rigid_receptor is not None:
                 output_file = "vina_multidock_result_{}_flexible.pdbqt".format(receptor.name)
-                (rc, stdout, stderr) = adContext.vina(receptor=rigid_receptor,
-                                                      flex=flex_receptor,
-                                                      ligand=ligands_pdbqt,
-                                                      config=adContext.config['box_path'],
-                                                      exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                                             'exhaustiveness']),
-                                                      out=output_file)
-
+                arg_dict.update(receptor=rigid_receptor,
+                                flex=flex_receptor,
+                                ligand=ligands_pdbqt,
+                                out=output_file)
             else:
+                self.finished.emit("No flex and rigid parts!")
                 return
         else:
             output_file = "vina_multidock_result_{}.pdbqt".format(receptor.name)
-            (rc, stdout, stderr) = adContext.vina(receptor=receptor.pdbqt_location,
-                                                  ligand=ligands_pdbqt,
-                                                  config=adContext.config['box_path'],
-                                                  exhaustiveness=int(adContext.config['dockingjob_params'][
-                                                                         'exhaustiveness']),
-                                                  out=output_file)
+            arg_dict.update(receptor=receptor.pdbqt_location,
+                            ligand=ligands_pdbqt,
+                            out=output_file)
 
-        return rc, stdout, stderr
+        return arg_dict
 
 # sample_command = f'vina --receptor {rigid_receptor} \ --flex {flex_receptor} --ligand {
 # ligand_to_dock.pdbqt} \ --config {box_path} \ --exhaustiveness {exhaustiveness} --out

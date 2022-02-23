@@ -13,7 +13,7 @@ class Ligand:
     def __init__(self, name, pdb, onPrepared=None) -> None:
         self.name = name
         self.pdb = pdb
-        self.pdbqt = ''
+        self.pdbqt = None
         self.fromPymol = True
         self.prepared = False
         self.onPrepared = onPrepared

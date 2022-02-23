@@ -179,4 +179,3 @@ class FlexibleReceptorController(BaseController):
                     f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
 
         # form.flexRes_lstw.addItems(stored.flexible_residues)
-

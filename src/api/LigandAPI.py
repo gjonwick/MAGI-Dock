@@ -58,7 +58,7 @@ class LigandJobController(BaseController):
             self.logger.error("Please select a .pdbqt file!")
             return
 
-        ligand = Ligand(prepared_ligand_name, '')
+        ligand = Ligand(prepared_ligand_name, None)
         ligand.pdbqt = prepared_ligand_path
         ligand.fromPymol = False
         ligand.prepared = True
@@ -160,6 +160,7 @@ class PreparationWorker(QtCore.QRunnable):
         self.working_dir = self.adContext.config['working_dir']
         self.all_ligands = self.adContext.ligands
         self._setup_logging()
+        self.config = self.adContext.config['ligandjob_params']
 
     def _setup_logging(self):
         logging_module = SignalAdapter(self.signals.progress)

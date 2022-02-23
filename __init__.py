@@ -25,6 +25,7 @@ import sys
 # Avoid importing "expensive" modules here (e.g. scipy), since this code is
 # executed on PyMOL's startup. Only import such modules inside functions.
 
+
 sys.path.append(os.path.join(os.path.dirname(__file__)))
 if '.' not in sys.path:
     sys.path.append('.')
@@ -43,6 +44,7 @@ from src.api.BoxAPI import BoxAPI
 from src.api.LigandAPI import LigandJobController
 from src.api.ReceptorAPI import RigidReceptorController, FlexibleReceptorController
 from src.api.DockingAPI import VinaWorker, DockingJobController
+from src.utils.util import is_float
 
 from src.log.Logger import *
 
@@ -114,8 +116,22 @@ def make_dialog():
     logger.addHandler(log_box_handler)
     logger.setLevel(logging.DEBUG)
 
-    def log_to_widget(m):
-        logger.info(m)
+    def startup():
+        form.exhaust_txt.setText(str(adContext.config['dockingjob_params']['exhaustiveness']))
+        form.numPoses_txt.setText(str(adContext.config['dockingjob_params']['n_poses']))
+        form.energyRange_txt.setText(str(adContext.config['dockingjob_params']['energy_range']))
+        form.minRMSD_txt.setText(str(adContext.config['dockingjob_params']['min_rmsd']))
+        form.scoring_comboBox.setCurrentText(adContext.config['dockingjob_params']['scoring'])
+
+        ad4 = adContext.config['dockingjob_params']['scoring'] == 'ad4'
+        vinardo = adContext.config['dockingjob_params']['scoring'] == 'vinardo'
+
+        form.generateAffinityMaps_btn.setEnabled(ad4)
+        if ad4 or vinardo:
+            form.preparedLigands_lstw_2.clearSelection()
+            form.preparedLigands_lstw_2.setSelectionMode(1)
+        else:
+            form.preparedLigands_lstw_2.setSelectionMode(2)
 
     def printRecChange():
         print(f'New receptor is{adContext.receptor.name}!')
@@ -379,7 +395,7 @@ def make_dialog():
         ligandController = LigandJobController(form)
         ligandController.prepare_ligands(selectedLigands)
 
-    def OnRunDockingJobClicked():
+    def OnRunDockingJobClicked(multiple_ligands_docking):
         # Notify adContext about the ligands the user wishes to be docked
         selectedLigands = form.preparedLigands_lstw_2.selectedItems()
         adContext.ligands_to_dock.clear()
@@ -387,8 +403,16 @@ def make_dialog():
             ligand = adContext.ligands[sele.text()]
             adContext.ligands_to_dock[sele.text()] = ligand
 
-        docking_job_controller = DockingJobController(form)
-        docking_job_controller.run()
+        dockingJobController = DockingJobController(form, multiple_ligands_docking)
+        dockingJobController.run()
+
+    def OnRunDockingWrapper(multiple_ligands_docking):
+        return lambda: OnRunDockingJobClicked(multiple_ligands_docking)
+
+    def OnGenerateAffinityMapsClicked():
+        selectedLigands = form.preparedLigands_lstw_2.selectedItems()
+        dockingJobController = DockingJobController(form)
+        dockingJobController.generateAffinityMaps(selectedLigands)
 
     # "button" callbacks
     def onSelectGeneratedReceptor(item):
@@ -465,15 +489,48 @@ def make_dialog():
         logger.info(f'working_dir = {dir_name}')
         form.workignDir_txt.setText(dir_name)
 
+    def onPHChange():
+        adContext.config['ligandjob_params']['ph'] = float(
+            form.exhaust_txt.text().strip()) if is_float(form.exhaust_txt.text().strip()) else 7.4
+        logger.debug(f"Exhaust set to: {adContext.config['ligandjob_params']['ph']}")
+
     def OnExhaustChange():
-        adContext.config['dockingjob_params']['exhaustiveness'] = float(
+        adContext.config['dockingjob_params']['exhaustiveness'] = int(
             form.exhaust_txt.text().strip()) if form.exhaust_txt.text().strip().isnumeric() else 8
         logger.debug(f"Exhaust set to: {adContext.config['dockingjob_params']['exhaustiveness']}")
 
-    def onNumPosesChange():
-        adContext.config['dockingjob_params']['n_poses'] = float(
+    def OnNumPosesChange():
+        adContext.config['dockingjob_params']['n_poses'] = int(
             form.numPoses_txt.text().strip()) if form.numPoses_txt.text().strip().isnumeric() else 9
         logger.debug("Num poses set to {}".format(adContext.config['dockingjob_params']['n_poses']))
+
+    def OnEnergyRangeChange():
+        adContext.config['dockingjob_params']['energy_range'] = int(
+            form.energyRange_txt.text().strip()
+        ) if form.energyRange_txt.text().strip().isnumeric() else 3
+        logger.debug("Energy range set to {}".format(adContext.config['dockingjob_params']['energy_range']))
+
+    def OnMinRMSDChange():
+        adContext.config['dockingjob_params']['min_rmsd'] = int(
+            form.minRMSD_txt.text().strip()
+        ) if form.minRMSD_txt.text().strip().isnumeric() else 1
+        logger.debug("Minimum RMSD set to {}".format(adContext.config['dockingjob_params']['min_rmsd']))
+
+    def OnScoringChange():
+        adContext.config['dockingjob_params']['scoring'] = str(form.scoring_comboBox.currentText())
+        logger.debug("Scoring set to {}".format(adContext.config['dockingjob_params']['scoring']))
+
+        ad4 = adContext.config['dockingjob_params']['scoring'] == 'ad4'
+        vinardo = adContext.config['dockingjob_params']['scoring'] == 'vinardo'
+
+        if ad4 or vinardo:
+            form.preparedLigands_lstw_2.clearSelection()
+            form.preparedLigands_lstw_2.setSelectionMode(1)
+        else:
+            form.preparedLigands_lstw_2.setSelectionMode(2)
+
+        form.generateAffinityMaps_btn.setEnabled(ad4)
+
 
     # NOTE: doesn't change the environment of the application (i.e. executing cd will not change the current
     # directory, since that is controlled by the os module). Use the app shell, just for simple commands,
@@ -541,7 +598,9 @@ def make_dialog():
     form.addLigand_btn.clicked.connect(OnAddLigandClicked)
     form.loadLigand_btn.clicked.connect(load_ligand)
     form.loadReceptor_btn.clicked.connect(load_receptor)
-    form.runDocking_btn.clicked.connect(OnRunDockingJobClicked)
+    form.runDocking_btn.clicked.connect(OnRunDockingWrapper(False))
+    form.runMultipleDocking_btn.clicked.connect(OnRunDockingWrapper(True))
+    form.generateAffinityMaps_btn.clicked.connect(OnGenerateAffinityMapsClicked)
 
     form.showBox_ch.stateChanged.connect(show_hide_Box)
     form.fillBox_ch.stateChanged.connect(fill_unfill_Box)
@@ -550,7 +609,10 @@ def make_dialog():
     form.close_btn.clicked.connect(onCloseWindow)
 
     form.exhaust_txt.textChanged.connect(OnExhaustChange)
-    form.numPoses_txt.textChanged.connect(onNumPosesChange)
+    form.numPoses_txt.textChanged.connect(OnNumPosesChange)
+    form.energyRange_txt.textChanged.connect(OnEnergyRangeChange)
+    form.minRMSD_txt.textChanged.connect(OnMinRMSDChange)
+    form.scoring_comboBox.currentTextChanged.connect(OnScoringChange)
 
     #form.browseADFR_btn.clicked.connect(OnBrowseADFRClicked)
     #form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)
@@ -562,5 +624,7 @@ def make_dialog():
     #form.saveConfig_btn.clicked.connect(saveConfig)
 
     form.shellInput_txt.returnPressed.connect(OnShellCommandSubmitted)
+
+    startup()
 
     return qDialog

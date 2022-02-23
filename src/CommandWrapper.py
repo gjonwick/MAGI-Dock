@@ -107,8 +107,13 @@ class CustomCommand(object):
             stdout = []
             stderr = []
 
-            # TODO: use an buffer as a subject, and notify the observers (controllers) on every readLine
-            assert (self.logging_module is not None)
+            # TODO: this is for the coder,
+            #  unfortunately every wrapped command should be associated with a logging module (to be reviewed)
+            try:
+                assert (self.logging_module is not None)
+            except AssertionError:
+                raise Exception("No logging_module for command {}".format(self.command_name))
+
             with p.stdout:
                 for line in iter(p.stdout.readline, b''):
                     stdout.append(line.decode('utf-8'))

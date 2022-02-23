@@ -66,6 +66,14 @@ def in_path(executable_name):
     return shutil.which(executable_name) is not None
 
 
+def is_float(element) -> bool:
+    try:
+        float(element)
+        return True
+    except ValueError:
+        return False
+
+
 def module_loaded(module_name):
     """ Checks if a module (as in CentOS modules) is loaded. """
     # lsmod_proc = subprocess.Popen(['module list'], stdout=subprocess.PIPE)
@@ -102,3 +110,12 @@ class dotdict(dict):
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
+
+from enum import Enum
+
+
+class Scoring(Enum):
+    VINA = 'vina',
+    AD = 'ad4',
+    VINARDO = 'vinardo'
