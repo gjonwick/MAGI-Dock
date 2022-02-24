@@ -29,20 +29,22 @@ class Receptor:
         print(f'Receptor says: my location is {str(self.pdbqt_location)}')
         res_str = ''
         pid = os.path.basename(self.pdbqt_location).split('.')[0]
-        if '_' in pid:
-            pid = pid.split('_')[-1]
+
+        # no need for this
+        # if '_' in pid:
+        #     pid = pid.split('_')[-1]
 
         chains = []
         full_res_string = ''
         for chain, contents in self.flexible_residues.items():
-            ress = []
-            chain_string = f'{pid}:{chain}:'
+            residues_per_chain = []
+            chain_string = "{}:{}:".format(pid, chain)
             for res in contents:
                 # full_res_name = pid + ':' + chain + ':' + '_'.join(ress)
                 res_string = f'{str(res.resn) + res.resi}'
-                ress.append(res_string)
+                residues_per_chain.append(res_string)
             # TODO: review this, flex_receptor doesn't accept it
-            full_res_string = '_'.join(ress)
+            full_res_string = '_'.join(residues_per_chain)
             chain_string = chain_string + full_res_string
 
             chains.append(chain_string)
@@ -51,7 +53,8 @@ class Receptor:
 
         # logging.info(final_str)
         # NOTE: should return final_string
-        return full_res_string
+        #return full_res_string
+        return final_str
 
     def __repr__(self):
         pdbqt_location = 'No PDBQT' if self.pdbqt_location is None else self.pdbqt_location

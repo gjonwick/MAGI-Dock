@@ -154,9 +154,6 @@ class FlexibleReceptorController(BaseController):
                 
             (rc, stdout, stderr) = adContext.prepare_flexreceptor(r=receptor_pdbqt, s=res_string)
 
-            if stdout is not None:
-                self.logger.debug(f"{stdout}") # .decode('utf-8')
-
             if rc == 0:
 
                 # TODO: autodock should return the names somewhere
@@ -177,5 +174,6 @@ class FlexibleReceptorController(BaseController):
             else:
                 self.logger.error(
                     f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
+
 
         # form.flexRes_lstw.addItems(stored.flexible_residues)
