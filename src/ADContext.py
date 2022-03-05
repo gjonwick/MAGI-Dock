@@ -40,7 +40,7 @@ class ADContext:
             self.gpf = None
 
             # TODO: remove those from config dict
-            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_path': None, 'box_path': None,
+            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_python_path': None, 'box_path': None,
                            'dockingjob_params': {
                                'exhaustiveness': 8,
                                'n_poses': 9,
@@ -76,7 +76,7 @@ class ADContext:
         # TODO: read the tool names from the AutoDockTools directory
         def load_ad_tools(self):
             tools = {}
-            AD_MODULE_LOADED = module_loaded('ADFRsuite') and module_loaded('mgltools')
+            AD_MODULE_LOADED = module_loaded('ADFRsuite') or module_loaded('mgltools')
 
             if not AD_MODULE_LOADED:
                 if self.ad_tools_path is None:
@@ -92,7 +92,8 @@ class ADContext:
                     if cls_name == 'prepare_gpf':
                         print('PREPARE_GPF LOADED!')
                     full_command = os.path.join(self.config['ad_tools_path'], command_name)
-                    tools[cls_name.lower()] = create_tool(cls_name, full_command, None)()
+
+                    tools[cls_name.lower()] = create_tool(cls_name, full_command, self.config['mgl_python_path'])()
 
                 self.__dict__.update(tools)
                 self.ad_tools_loaded = True

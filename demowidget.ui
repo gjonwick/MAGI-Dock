@@ -390,7 +390,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>3</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -629,14 +629,43 @@
     <widget class="QLabel" name="label_19">
      <property name="geometry">
       <rect>
-       <x>70</x>
-       <y>350</y>
-       <width>67</width>
-       <height>17</height>
+       <x>16</x>
+       <y>345</y>
+       <width>121</width>
+       <height>20</height>
       </rect>
      </property>
      <property name="text">
-      <string>MGL bin:</string>
+      <string>MGL python exe:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="mglbinPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>340</y>
+       <width>331</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseMGLbin_btn">
+     <property name="geometry">
+      <rect>
+       <x>480</x>
+       <y>340</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
      </property>
     </widget>
    </widget>

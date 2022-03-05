@@ -454,6 +454,16 @@ def make_dialog():
         logger.info("ad_tools_path = {}".format(dir_name))
         form.adfrPath_txt.setText(dir_name)
 
+    def OnBrowseMGLPythonExeClicked():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.mglbinPath_txt.setText(filename[0])
+            adContext.config['mgl_python_path'] = filename[0]
+            logger.info(adContext.config['mgl_python_path'])
+
     def OnBrowseADToolsClicked():
         # dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         # adContext.config['mgl_path'] = dir_name
@@ -616,6 +626,7 @@ def make_dialog():
 
     #form.browseADFR_btn.clicked.connect(OnBrowseADFRClicked)
     #form.browseMGL_btn.clicked.connect(OnBrowseMGLClicked)
+    form.browseMGLbin_btn.clicked.connect(OnBrowseMGLPythonExeClicked)
     form.browseADTools_btn.clicked.connect(OnBrowseADToolsClicked)
     form.browseVina_btn.clicked.connect(OnBrowseVinaClicked)
     form.browseConfig_btn.clicked.connect(OnBrowseConfigClicked)

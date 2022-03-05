@@ -222,7 +222,7 @@ class PopenWithInput(subprocess.Popen):
 #         return self._handle_command(*args, **kwargs)
 
 
-def create_tool(tool_name, command_name, executable=None):
+def create_tool(tool_name, command_name, executable):
     """ Here's the whole idea of the CommandWrapper; to wrap up all the argument preparation code and make it reusable
      for every tool. """
 
