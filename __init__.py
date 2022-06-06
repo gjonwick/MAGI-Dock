@@ -51,7 +51,7 @@ class vec3:
     """
     A simple class to represent 3D vectors.
     """
-    
+
     def __init__(self, x: float, y: float, z: float) -> None:
         self.x = x
         self.y = y
@@ -1425,6 +1425,7 @@ class LigandJobController(BaseController):
             # TODO: remove foreign ligand from pymol (optional)
         adContext.signalLigandAction()
 
+    # Ligands are prepared on a seperate thread
     def prepare_ligands(self, ligand_widget_list):
         adContext = self.adContext
         ad = AutoDock()
@@ -1572,6 +1573,7 @@ class RigidReceptorController(BaseController):
         # load the tools only when they were not already loaded (the if not adContext.ad_tools_loaded condition)
         # remove that
         # "Could not load AutoDock tools!" AutoDock class already takes care of that!
+        arg_dict = {}
 
         # TODO: (future issue) remove form reference from here; better if the API classes do not know about the form
         form = self.form
@@ -1593,10 +1595,13 @@ class RigidReceptorController(BaseController):
             pass
 
         ad.prepare_receptor.attach_logging_module(LoggerAdapter(self.logger))
+        arg_dict.update(r=receptor_pdb, o=receptor_pdbqt)
 
         with while_in_dir(receptor_pdb_dir):  # because autodock can't see files in other directories ...
+            if form.checkBox_addHydrogens_receptor.isChecked():
+                arg_dict.update(A='hydrogens')
 
-            (rc, stdout, stderr) = ad.prepare_receptor(r=receptor_pdb, o=receptor_pdbqt, A='checkhydrogens')
+            (rc, stdout, stderr) = ad.prepare_receptor(**arg_dict)
 
             if rc == 0:
                 receptor = Receptor(receptor_name, receptor_pdbqt, onReceptorAdded=self.callbacks['onReceptorAdded'])
