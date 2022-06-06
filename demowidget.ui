@@ -18,7 +18,7 @@
   </property>
   <property name="windowIcon">
    <iconset>
-    <normaloff>Face_colored_cube.png</normaloff>Face_colored_cube.png</iconset>
+    <normaloff>../../.designer/backup/Face_colored_cube.png</normaloff>../../.designer/backup/Face_colored_cube.png</iconset>
   </property>
   <widget class="QDoubleSpinBox" name="centerY">
    <property name="geometry">
@@ -390,7 +390,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>0</number>
+    <number>1</number>
    </property>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -729,7 +729,7 @@
      <property name="geometry">
       <rect>
        <x>160</x>
-       <y>240</y>
+       <y>290</y>
        <width>141</width>
        <height>25</height>
       </rect>
@@ -781,7 +781,7 @@
      <property name="geometry">
       <rect>
        <x>160</x>
-       <y>200</y>
+       <y>255</y>
        <width>141</width>
        <height>25</height>
       </rect>
@@ -847,6 +847,19 @@
      </property>
      <property name="text">
       <string>Receptor console:</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="checkBox_addHydrogens_receptor">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>190</y>
+       <width>81</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add H</string>
      </property>
     </widget>
    </widget>
