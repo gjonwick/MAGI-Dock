@@ -1088,6 +1088,7 @@ class DockingJobController(BaseController):
         """ Responsible for generating both gpf and affinity maps. """
 
         adContext = ADContext()
+        autoDock = AutoDock()
         receptor = adContext.receptor
         ligand_name = selectedLigands[0].text()
         ligand = adContext.ligands[ligand_name]
@@ -1096,8 +1097,8 @@ class DockingJobController(BaseController):
             self.logger.error('The selected ligand is not prepared!')
             return
 
-        adContext.prepare_gpf.attach_logging_module(LoggerAdapter(self.logger))
-        adContext.autogrid.attach_logging_module(LoggerAdapter(self.logger))
+        autoDock.prepare_gpf.attach_logging_module(LoggerAdapter(self.logger))
+        autoDock.autogrid.attach_logging_module(LoggerAdapter(self.logger))
 
         flex_docking = not len(receptor.flexible_residues) == 0
 
@@ -1113,7 +1114,7 @@ class DockingJobController(BaseController):
         receptor_pdbqt = "{}.pdbqt".format(saved_receptor_name)  # receptor_pdbqt will be the rigid pdbqt if flexible
 
         try:
-            (rc, stdout, stderr) = adContext.prepare_gpf(l=ligand.pdbqt, r=receptor_pdbqt, o=receptor_gpf,
+            (rc, stdout, stderr) = autoDock.prepare_gpf(l=ligand.pdbqt, r=receptor_pdbqt, o=receptor_gpf,
                                                          y=True)
             if rc == 0:
                 receptor.gpf = receptor_gpf
@@ -1130,7 +1131,7 @@ class DockingJobController(BaseController):
         receptor_pdbqt_dir = os.path.dirname(receptor_pdbqt)
         with while_in_dir(receptor_pdbqt_dir):
             try:
-                (rc, stdout, stderr) = adContext.autogrid(p="{}.gpf".format(saved_receptor_name),
+                (rc, stdout, stderr) = autoDock.autogrid(p="{}.gpf".format(saved_receptor_name),
                                                           l="{}.glg".format(saved_receptor_name))
                 if rc == 0:
                     self.logger.info("Affinity maps for the {}_{} complex ready!".format(ligand.name, receptor.name))
@@ -1517,7 +1518,7 @@ class PreparationWorker(QtCore.QRunnable):
             ligand_pdb = self._update_ligand_pdb(ligand)
             # ligand_pdb = 'TEST_no_pdb_update'
             ligand_pdb_dir = os.path.dirname(ligand_pdb)
-            ligand_pdbqt = os.path.join(self.working_dir, "ad_binding_test_ligand{}.pdbqt".format(ligand.name))
+            ligand_pdbqt = os.path.join(self.working_dir, "plg_{}.pdbqt".format(ligand.name))
             ligand.pdbqt = ligand_pdbqt
 
             arg_dict.update(l=ligand_pdb, o=ligand_pdbqt)
@@ -1541,7 +1542,7 @@ class PreparationWorker(QtCore.QRunnable):
     def _update_ligand_pdb(self, ligand):
 
         if ligand.fromPymol:
-            ligand_pdb = os.path.join(self.working_dir, "ad_binding_test_ligand{}.pdb".format(ligand.name))
+            ligand_pdb = os.path.join(self.working_dir, "plg_{}.pdb".format(ligand.name))
             self.signals.progress.emit("Generating pdb {} for ligand {}".format(ligand_pdb, ligand.name))
             ligand.pdb = ligand_pdb
             self.signals.pdb_update.emit(ligand)
@@ -1585,8 +1586,8 @@ class RigidReceptorController(BaseController):
         receptor_name = selection[0].text()
 
         working_dir = adContext.config['working_dir']
-        receptor_pdb = os.path.join(working_dir, f'ad_binding_test_{receptor_name}.pdb')
-        receptor_pdbqt = os.path.join(working_dir, f'ad_binding_test_{receptor_name}.pdbqt')
+        receptor_pdb = os.path.join(working_dir, f'plg_{receptor_name}.pdb')
+        receptor_pdbqt = os.path.join(working_dir, f'plg_{receptor_name}.pdbqt')
         receptor_pdb_dir = os.path.dirname(receptor_pdb)
 
         try:
@@ -1735,7 +1736,7 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
         adContext = ADContext()
         AD_MODULE_LOADED = module_loaded('ADFRSuite') or module_loaded('mgltools')
         if AD_MODULE_LOADED:
-            self.tool_names = ['prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
+            self.tool_names = ['prepare_gpf', 'autogrid4', 'prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
         else:
             if adContext.ad_tools_path is None:
                 print('ADContext here: AutoDockTools path not specified, returning')
@@ -1755,9 +1756,13 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
         if in_path('autogrid4'):
             cls_name = clsname_from_cmdname('autogrid4')
             tools[cls_name.lower()] = create_tool(cls_name, 'autogrid4', None)
+        else:
+            print('autogrid4 not in path!')
 
         for command_name in self.tool_names:
             cls_name = clsname_from_cmdname(command_name)
+            if cls_name == 'prepare_gpf':
+                    print('PREPARE_GPF LOADED!')
             full_command = os.path.join(adContext.config['ad_tools_path'], command_name)
             tools[cls_name.lower()] = create_tool(cls_name, full_command, adContext.config['mgl_python_path'])()
 
