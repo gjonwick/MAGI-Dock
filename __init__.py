@@ -1731,11 +1731,12 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
     def __init__(self):
         self.load_command_names()
         self.__dict__.update(self.load_commands())
+        self.AD_MODULE_LOADED = module_loaded('ADFRSuite') or module_loaded('mgltools')
 
     def load_command_names(self):
         adContext = ADContext()
-        AD_MODULE_LOADED = module_loaded('ADFRSuite') or module_loaded('mgltools')
-        if AD_MODULE_LOADED:
+        
+        if self.AD_MODULE_LOADED:
             self.tool_names = ['prepare_gpf', 'autogrid4', 'prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
         else:
             if adContext.ad_tools_path is None:
@@ -1763,8 +1764,13 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
             cls_name = clsname_from_cmdname(command_name)
             if cls_name == 'prepare_gpf':
                     print('PREPARE_GPF LOADED!')
-            full_command = os.path.join(adContext.config['ad_tools_path'], command_name)
-            tools[cls_name.lower()] = create_tool(cls_name, full_command, adContext.config['mgl_python_path'])()
+            if self.AD_MODULE_LOADED:
+                full_command = command_name
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, None)()
+
+            else:
+                full_command = os.path.join(adContext.config['ad_tools_path'], command_name)
+                tools[cls_name.lower()] = create_tool(cls_name, full_command, adContext.config['mgl_python_path'])()
 
         adContext.ad_tools_loaded = True
         return tools
@@ -1772,7 +1778,7 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
 
 class ADContext:
     """
-    ADContext knows everything!!!
+    ADContext knows everything.
     Think of it as a type of registry (hence, the singleton).
 
     ADContext doesn't know how you generated receptors, or how you prepared the ligands, another piece of code
