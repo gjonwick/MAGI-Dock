@@ -18,3 +18,7 @@ The plugin is designed to work in two types of environments.
 
 
 A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases)
+
+
+## Installing the plugin
+Download the repo and extract the files. Then, in PyMOL click on Plugin -> Plugin Manager -> Install New Plugin -> Install from local file (Choose File ...) and select the __init__.py file in the plugin folder. You can access the plugin from the Plugin tab in PyMOL.
