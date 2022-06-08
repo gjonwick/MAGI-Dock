@@ -1729,9 +1729,9 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
     tool_names = None
 
     def __init__(self):
+        self.AD_MODULE_LOADED = module_loaded('ADFRSuite') or module_loaded('mgltools')
         self.load_command_names()
         self.__dict__.update(self.load_commands())
-        self.AD_MODULE_LOADED = module_loaded('ADFRSuite') or module_loaded('mgltools')
 
     def load_command_names(self):
         adContext = ADContext()
@@ -1764,6 +1764,7 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
             cls_name = clsname_from_cmdname(command_name)
             if cls_name == 'prepare_gpf':
                     print('PREPARE_GPF LOADED!')
+
             if self.AD_MODULE_LOADED:
                 full_command = command_name
                 tools[cls_name.lower()] = create_tool(cls_name, full_command, None)()
