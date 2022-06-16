@@ -6,6 +6,7 @@
 # from __future__ import absolute_import
 # from __future__ import print_function
 
+from email.charset import add_alias
 import os
 import sys
 
@@ -46,6 +47,73 @@ import math
 
 
 ################################################## Helpers #############################################################
+
+def get_scores(results_path, best_pose_only=True):
+    import os
+    from os import listdir
+    from os.path import isfile, join
+    
+    if results_path == None:
+        return
+
+    #results_dir = "vina_batch_result_1mrq_54VAL_all"
+
+    if os.path.isdir(results_path):
+        results_files = [f for f in listdir(results_path) if isfile(join(results_path, f))]
+    else:
+        f = results_path.split('/')[-1]
+        results_path = "/".join(results_path.split('/')[0:-1])
+        print("Results path and file = {}, {}".format(results_path, f))
+        results_files = [f]
+
+    def process_vina_result_file(f):
+        #print("In file: {}".format(f))
+        compound_scores = {}
+    
+        with open(f) as file:
+            lines = file.readlines()
+            model_read = False
+            for line in lines:
+                if line.startswith("MODEL"):
+                    model = line.rstrip()
+                    compound_scores[model] = {}
+                    model_read = best_pose_only
+                if line.startswith("REMARK VINA RESULT"):
+                    compound_scores[model]["REMARK VINA RESULT"] = line.rstrip().split(':')[1].rstrip()
+                if line.startswith("REMARK INTER + INTRA"):
+                    compound_scores[model]["REMARK INTER + INTRA"] = float(line.rstrip().split(':')[1].rstrip())
+                if line.startswith("REMARK INTER"):
+                    compound_scores[model]["REMARK INTER"] = float(line.rstrip().split(':')[1].rstrip())
+                if line.startswith("REMARK INTRA"):
+                    compound_scores[model]["REMARK INTRA"] = float(line.rstrip().split(':')[1].rstrip())
+                if line.startswith("REMARK UNBOUND"):
+                    compound_scores[model]["REMARK UNBOUND"] = float(line.rstrip().split(':')[1].rstrip())
+                    if model_read:
+                        break
+        
+        # print(compound_scores)
+        return compound_scores
+
+    results_dict = {}
+    #print(results_files)
+    for f in results_files:
+        ligand_name = f.split('.')[0]
+        compound_scores = process_vina_result_file(join(results_path, f))
+        results_dict[ligand_name] = compound_scores
+            
+
+    return results_dict
+    #print(result_dict)
+
+def format_scores(results_dict):
+    data = []
+    for compound, result_info in results_dict.items():
+        for pose, scores in result_info.items():
+            data.append([compound, pose, float(scores["REMARK VINA RESULT"][0:15].strip())])
+    
+    data = sorted(data, key=lambda x : x[-1])
+    return data
+
 
 class vec3:
     """
@@ -1079,10 +1147,12 @@ class DockingJobController(BaseController):
         # )
 
     def onFinished(self, msg):
+        adContext = ADContext()
         self.form.runDocking_btn.setEnabled(True)
         self.form.runMultipleDocking_btn.setEnabled(True)
         self.logger.info(msg)
-        # self.logger.info("I'm DONE!")
+        self.form.loadResults_btn.click()
+
 
     def generateAffinityMaps(self, selectedLigands):
         """ Responsible for generating both gpf and affinity maps. """
@@ -1170,8 +1240,8 @@ class VinaWorker(QtCore.QObject):
         adContext = ADContext()
         logging_module = SignalAdapter(self.progress)
         self.vina.vina.attach_logging_module(logging_module)
-        # get working dir
         working_dir = adContext.config['working_dir']
+        success_flag = True
 
         # make sure there are ligands to dock
         ligands_to_dock = adContext.ligands_to_dock
@@ -1214,19 +1284,21 @@ class VinaWorker(QtCore.QObject):
                     arg_dict = self.batch_docking(ligands_to_dock, receptor)
 
             try:
+                #adContext.config['output_file'] == arg_dict['out']
                 (rc, stdout, stderr) = self.vina.vina(**arg_dict)
                 self.progress.emit("return code = {}".format(rc))
                 if rc == 0:
-                    self.finished.emit("Success!")
+                    self.progress.emit("Success!")
                     # self.finished.emit(stdout.decode('utf-8'))
                 else:
-                    self.finished.emit("Failed!")
+                    self.progress.emit("Failed!")
             except Exception as e:
                 self.finished.emit(str(e))
-                return
 
-        self.finished.emit('Done :)')
-
+        output_path = arg_dict['out'] if 'out' in arg_dict else arg_dict['dir']
+        adContext.config['output_file'] = os.path.join(working_dir, output_path)
+        self.finished.emit('Docking thread finished!')
+        
     def ad_docking(self, ligand, receptor):
         arg_dict = self.arg_dict
         flex_docking = not len(receptor.flexible_residues) == 0
@@ -1273,7 +1345,7 @@ class VinaWorker(QtCore.QObject):
                                 ligand=ligand.pdbqt,
                                 out=output_file)
             else:
-                self.system.finished("When running flexible docking please generate the flexible receptor first!")
+                self.finished("When running flexible docking please generate the flexible receptor first!")
                 return
         else:
             output_file = "vina_result_{}.pdbqt".format(receptor.name)
@@ -1304,7 +1376,7 @@ class VinaWorker(QtCore.QObject):
                                 batch=ligands_pdbqt,
                                 dir=output_dir)
             else:
-                self.system.finished("When running flexible docking please generate the flexible receptor first!")
+                self.finished("When running flexible docking please generate the flexible receptor first!")
                 return
         else:
             output_dir = "vina_batch_result_{}".format(receptor.name)
@@ -1699,6 +1771,38 @@ class FlexibleReceptorController(BaseController):
                     f'Generating receptor {adContext.receptor.name} with flexible residues {res_string} failed!')
 
 
+# ModelView architecture of PyQt - the only place where it is used is in the results model in the results tab
+
+class ResultsModel(QtCore.QAbstractTableModel):
+    """
+    Specify how to access and present the data.
+    """
+    
+    header_labels = ['Compound', 'Pose', 'Score']
+
+    def __init__(self, data) -> None:
+        super().__init__()
+        self._data = data
+
+    def headerData(self, section, orientation, role=QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
+            return self.header_labels[section]
+        return QtCore.QAbstractTableModel.headerData(self, section, orientation, role)
+
+    def data(self, index, role):
+        if role == QtCore.Qt.DisplayRole:
+            return self._data[index.row()][index.column()]
+
+    def rowCount(self, index):
+        return len(self._data)
+    
+    def columnCount(self, index):
+        return len(self._data[0])
+    
+    def setData(self, data):
+        self._data = data
+
+
 class Vina:
 
     def __init__(self):
@@ -1779,8 +1883,7 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
 
 class ADContext:
     """
-    ADContext knows everything.
-    Think of it as a type of registry (hence, the singleton).
+    ADContext knows everything, acting as a registry, bookkeeping every action.
 
     ADContext doesn't know how you generated receptors, or how you prepared the ligands, another piece of code
     is responsible for that, but however, ADContext is always notified if a receptor was generated or not.
@@ -1788,16 +1891,11 @@ class ADContext:
     for which ADContext will be notified) in separate threads, synchronization problems may arise. In this approach,
     ADContext is a singleton, and it should be made thread safe so whenever a thread wants to access the vinaInstance,
     it must do so in a "safe" way.
+    XXX: So far the application doesn't spawn multiple threads, so it's safe to keep ADContext this way.
 
-    If you generated a receptor, ADContext will know it!
-    If you prepared a ligand, ADContext will know it!
+    NOTE: The tools to run docking are delegated to their respective classes.
 
-    Moreover, ADContext will contain all the tools needed to run docking. Currently the tools are directly exposed
-    to the class and are not delegated to specialised classes. TODO: delegate docking jobs
-
-        attributes: receptor/receptors - an instance holding the receptor/receptors currently initiated by the user
-        ligands - the ligands we wish to bind (they do not belong to receptors, because users will load and execute both
-        receptors and ligands as they wish) XXX:form - XXX:not needed """
+    """
 
     class __ADContext:
 
@@ -1817,7 +1915,7 @@ class ADContext:
             self.gpf = None
 
             # TODO: remove those from config dict
-            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_python_path': None, 'box_path': None,
+            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_python_path': None, 'box_path': None, 'output_file': None,
                            'dockingjob_params': {
                                'exhaustiveness': 8,
                                'n_poses': 9,
@@ -1845,10 +1943,8 @@ class ADContext:
             self.receptor = receptor
             self._notify_observers()
 
-        """
-        Callbacks act as Observers, because we will probably not use observer objects, but just methods,
-        hence callbacks
-        """
+    
+        # Callbacks act as Observers   
 
         def _notify_observers(self):
             for callback in self._callbacks:
@@ -1947,6 +2043,7 @@ def make_dialog():
     # and/or PySide as well
     from pymol.Qt import QtWidgets
     from pymol.Qt import QtCore
+    
     from pymol.Qt.utils import loadUi
     from pymol.Qt.utils import getSaveFileNameWithExt
 
@@ -1979,6 +2076,13 @@ def make_dialog():
         form.energyRange_txt.setText(str(adContext.config['dockingjob_params']['energy_range']))
         form.minRMSD_txt.setText(str(adContext.config['dockingjob_params']['min_rmsd']))
         form.scoring_comboBox.setCurrentText(adContext.config['dockingjob_params']['scoring'])
+
+        # Initiates the table view model for the results table
+        myTableModel = ResultsModel(data=[[1, 2, 3], [1, -1, 1], [3, 5, 2], [1, 1, 1]])
+        #myTableModel.setHorizontalHeaderLabels(['Rank', 'Name', 'Energy'])
+        #myTableModel.verticalHeader().hide()
+        form.results_model = myTableModel
+        form.results_table.setModel(form.results_model)
 
         ad4 = adContext.config['dockingjob_params']['scoring'] == 'ad4'
         vinardo = adContext.config['dockingjob_params']['scoring'] == 'vinardo'
@@ -2225,7 +2329,7 @@ def make_dialog():
         receptor_names = [rec_id for rec_id in adContext.receptors.keys()]
         form.receptor_lstw.addItems(receptor_names)
         # TODO: add tooltips here
-
+        
     # TODO: the same as with OnDockingJobClicked, get the list of Entities here, and pass them to their respective
     #  controllers
 
@@ -2398,6 +2502,22 @@ def make_dialog():
 
         form.generateAffinityMaps_btn.setEnabled(ad4)
 
+
+    def OnLoadResults():
+        adContext = ADContext()
+        best_pose_only = form.bestPose_checkBox.isChecked()
+        output_file = adContext.config['output_file']
+        if output_file != None:
+            # get scores, and notify the tableview
+            scores = get_scores(output_file, best_pose_only)
+            formatted_scores = format_scores(scores)
+            print(formatted_scores)
+            form.results_model.setData(formatted_scores)
+            form.results_model.layoutChanged.emit()
+
+
+
+
     # NOTE: doesn't change the environment of the application (i.e. executing cd will not change the current
     # directory, since that is controlled by the os module). Use the app shell, just for simple commands,
     # i.e. loading modules, checking the current working directory, etc.
@@ -2491,6 +2611,7 @@ def make_dialog():
     # form.saveConfig_btn.clicked.connect(saveConfig)
 
     form.shellInput_txt.returnPressed.connect(OnShellCommandSubmitted)
+    form.loadResults_btn.clicked.connect(OnLoadResults)
 
     startup()
 

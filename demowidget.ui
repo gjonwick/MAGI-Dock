@@ -13,6 +13,18 @@
     <height>800</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>980</width>
+    <height>800</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>980</width>
+    <height>800</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>MAGI-Dock</string>
   </property>
@@ -390,7 +402,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>1</number>
+    <number>4</number>
    </property>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -622,7 +634,17 @@
       <bool>true</bool>
      </property>
      <property name="plainText">
-      <string>Guidlines go here:
+      <string>In order to use this plugin, AutoDock scripts and Vina should be present in the system. For example, MGLTools comes with a set of AutoDock scripts that are used to work with receptors and ligands. It is highly recommended to install MGLTools, since it also contains the correct python version and environment to run the scripts. Just using the scripts is not guaranteed to work, since they rely in a lot of libraries that come with MGLTools installation.
+
+The plugin is designed to work in two types of environments.
+
+In the case environment modules are present (this is usually the case when working with remote servers), the corresponding mgltools and vina modules should be loaded prior to running pymol, on the same shell (e.g. module load mgltools/1.5.7). There is no need to specify paths in the config section of the plugin, other than the working path and box path.
+
+In the case of personal computers (which I guess would be the most popular option), the users have to make sure MGLTools is installed in their system and there is a vina executable somewhere in the system (the vina executable should be named vina.exe). The AutodockTools and vina executable folder path should be specified in the config tab of the plugin before starting the docking steps.
+
+A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases)
+
+
 </string>
      </property>
     </widget>
@@ -852,7 +874,7 @@
     <widget class="QCheckBox" name="checkBox_addHydrogens_receptor">
      <property name="geometry">
       <rect>
-       <x>190</x>
+       <x>200</x>
        <y>190</y>
        <width>81</width>
        <height>23</height>
@@ -1045,9 +1067,9 @@
     <widget class="QCheckBox" name="checkBox_hydrogens">
      <property name="geometry">
       <rect>
-       <x>300</x>
-       <y>175</y>
-       <width>151</width>
+       <x>310</x>
+       <y>180</y>
+       <width>121</width>
        <height>23</height>
       </rect>
      </property>
@@ -1431,6 +1453,70 @@
      </property>
      <property name="text">
       <string>Generate Affinity Maps</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="results_tab">
+    <attribute name="title">
+     <string>Results</string>
+    </attribute>
+    <widget class="QTableView" name="results_table">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>351</width>
+       <height>701</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loadResults_btn">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>690</y>
+       <width>101</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load Results</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="exportCSV_btn">
+     <property name="geometry">
+      <rect>
+       <x>500</x>
+       <y>690</y>
+       <width>80</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Export CSV</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="exportCSV_txt">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>660</y>
+       <width>211</width>
+       <height>24</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="bestPose_checkBox">
+     <property name="geometry">
+      <rect>
+       <x>420</x>
+       <y>230</y>
+       <width>131</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Best Pose Only</string>
      </property>
     </widget>
    </widget>
