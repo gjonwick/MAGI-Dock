@@ -402,7 +402,7 @@
     <cursorShape>ArrowCursor</cursorShape>
    </property>
    <property name="currentIndex">
-    <number>4</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="config_tab">
     <attribute name="title">
@@ -412,7 +412,7 @@
      <property name="geometry">
       <rect>
        <x>140</x>
-       <y>400</y>
+       <y>480</y>
        <width>331</width>
        <height>25</height>
       </rect>
@@ -428,7 +428,7 @@
      <property name="geometry">
       <rect>
        <x>140</x>
-       <y>460</y>
+       <y>530</y>
        <width>331</width>
        <height>25</height>
       </rect>
@@ -441,7 +441,7 @@
      <property name="geometry">
       <rect>
        <x>140</x>
-       <y>520</y>
+       <y>680</y>
        <width>331</width>
        <height>25</height>
       </rect>
@@ -454,7 +454,7 @@
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>405</y>
+       <y>480</y>
        <width>111</width>
        <height>20</height>
       </rect>
@@ -467,7 +467,7 @@
      <property name="geometry">
       <rect>
        <x>95</x>
-       <y>465</y>
+       <y>535</y>
        <width>41</width>
        <height>17</height>
       </rect>
@@ -480,7 +480,7 @@
      <property name="geometry">
       <rect>
        <x>65</x>
-       <y>525</y>
+       <y>685</y>
        <width>67</width>
        <height>17</height>
       </rect>
@@ -493,7 +493,7 @@
      <property name="geometry">
       <rect>
        <x>480</x>
-       <y>400</y>
+       <y>480</y>
        <width>81</width>
        <height>25</height>
       </rect>
@@ -509,7 +509,7 @@
      <property name="geometry">
       <rect>
        <x>480</x>
-       <y>460</y>
+       <y>530</y>
        <width>81</width>
        <height>25</height>
       </rect>
@@ -525,7 +525,7 @@
      <property name="geometry">
       <rect>
        <x>480</x>
-       <y>520</y>
+       <y>680</y>
        <width>81</width>
        <height>25</height>
       </rect>
@@ -554,7 +554,7 @@
      <property name="geometry">
       <rect>
        <x>140</x>
-       <y>580</y>
+       <y>630</y>
        <width>331</width>
        <height>25</height>
       </rect>
@@ -566,8 +566,8 @@
     <widget class="QLabel" name="label_30">
      <property name="geometry">
       <rect>
-       <x>50</x>
-       <y>581</y>
+       <x>45</x>
+       <y>630</y>
        <width>91</width>
        <height>20</height>
       </rect>
@@ -580,7 +580,7 @@
      <property name="geometry">
       <rect>
        <x>480</x>
-       <y>580</y>
+       <y>630</y>
        <width>81</width>
        <height>25</height>
       </rect>
@@ -592,32 +592,6 @@
       <string>Browse</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="vinaoutput">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="geometry">
-      <rect>
-       <x>140</x>
-       <y>670</y>
-       <width>121</width>
-       <height>25</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_8">
-     <property name="geometry">
-      <rect>
-       <x>140</x>
-       <y>650</y>
-       <width>171</width>
-       <height>17</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Output file (vina):</string>
-     </property>
-    </widget>
     <widget class="QPlainTextEdit" name="introMessageBox">
      <property name="enabled">
       <bool>true</bool>
@@ -627,7 +601,7 @@
        <x>10</x>
        <y>20</y>
        <width>571</width>
-       <height>281</height>
+       <height>391</height>
       </rect>
      </property>
      <property name="readOnly">
@@ -644,7 +618,8 @@ In the case of personal computers (which I guess would be the most popular optio
 
 A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases)
 
-
+NOTIFICATIONS:
+Vina output file is assigned automatically based on the name of the receptor.
 </string>
      </property>
     </widget>
@@ -652,7 +627,7 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>16</x>
-       <y>345</y>
+       <y>430</y>
        <width>121</width>
        <height>20</height>
       </rect>
@@ -665,7 +640,7 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>140</x>
-       <y>340</y>
+       <y>430</y>
        <width>331</width>
        <height>25</height>
       </rect>
@@ -678,7 +653,49 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>480</x>
-       <y>340</y>
+       <y>430</y>
+       <width>81</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="autogridPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>140</x>
+       <y>580</y>
+       <width>331</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_22">
+     <property name="geometry">
+      <rect>
+       <x>65</x>
+       <y>580</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Autogrid:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseAutogrid_btn">
+     <property name="geometry">
+      <rect>
+       <x>480</x>
+       <y>580</y>
        <width>81</width>
        <height>25</height>
       </rect>
@@ -1067,9 +1084,9 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
     <widget class="QCheckBox" name="checkBox_hydrogens">
      <property name="geometry">
       <rect>
-       <x>310</x>
+       <x>300</x>
        <y>180</y>
-       <width>121</width>
+       <width>141</width>
        <height>23</height>
       </rect>
      </property>
@@ -1131,7 +1148,7 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>270</y>
+       <y>360</y>
        <width>180</width>
        <height>25</height>
       </rect>
@@ -1166,7 +1183,7 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>440</x>
-       <y>30</y>
+       <y>40</y>
        <width>131</width>
        <height>20</height>
       </rect>
@@ -1395,7 +1412,7 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>210</x>
-       <y>270</y>
+       <y>360</y>
        <width>180</width>
        <height>25</height>
       </rect>
@@ -1446,13 +1463,39 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
      <property name="geometry">
       <rect>
        <x>398</x>
-       <y>270</y>
+       <y>360</y>
        <width>173</width>
        <height>25</height>
       </rect>
      </property>
      <property name="text">
       <string>Generate Affinity Maps</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vinaoutput_txt">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>300</y>
+       <width>151</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_8">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>280</y>
+       <width>111</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Vina output file:</string>
      </property>
     </widget>
    </widget>
@@ -1465,16 +1508,25 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>351</width>
-       <height>701</height>
+       <width>571</width>
+       <height>601</height>
       </rect>
      </property>
+     <property name="sortingEnabled">
+      <bool>false</bool>
+     </property>
+     <attribute name="horizontalHeaderDefaultSectionSize">
+      <number>180</number>
+     </attribute>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
     </widget>
     <widget class="QPushButton" name="loadResults_btn">
      <property name="geometry">
       <rect>
-       <x>370</x>
-       <y>690</y>
+       <x>480</x>
+       <y>620</y>
        <width>101</width>
        <height>24</height>
       </rect>
@@ -1483,40 +1535,40 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
       <string>Load Results</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="exportCSV_btn">
-     <property name="geometry">
-      <rect>
-       <x>500</x>
-       <y>690</y>
-       <width>80</width>
-       <height>24</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Export CSV</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="exportCSV_txt">
-     <property name="geometry">
-      <rect>
-       <x>370</x>
-       <y>660</y>
-       <width>211</width>
-       <height>24</height>
-      </rect>
-     </property>
-    </widget>
     <widget class="QCheckBox" name="bestPose_checkBox">
      <property name="geometry">
       <rect>
-       <x>420</x>
-       <y>230</y>
+       <x>10</x>
+       <y>620</y>
        <width>131</width>
        <height>22</height>
       </rect>
      </property>
      <property name="text">
       <string>Best Pose Only</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="exportCSV_btn">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>690</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Export CSV</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="csvPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>340</x>
+       <y>690</y>
+       <width>141</width>
+       <height>25</height>
+      </rect>
      </property>
     </widget>
    </widget>

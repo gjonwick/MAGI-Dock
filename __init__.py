@@ -6,9 +6,11 @@
 # from __future__ import absolute_import
 # from __future__ import print_function
 
+import csv
 from email.charset import add_alias
 import os
 import sys
+import math
 
 import errno
 from contextlib import contextmanager
@@ -43,7 +45,7 @@ WORK_DIR = os.getcwd()
 
 # Helpers and Utils
 
-import math
+
 
 
 ################################################## Helpers #############################################################
@@ -175,6 +177,24 @@ class dotdict(dict):
 def touch(filename):
     with open(filename, 'a'):
         pass
+
+def export_csv(directory, filename, data):
+
+    # Parse the file name
+    if '.' in filename:
+        filename = filename.split('.')[0] + ".csv"
+    else:
+        filename += ".csv"
+
+    output_path = os.path.join(directory, filename)
+
+    # Export   
+    print("Preparing for export on {}".format(output_path))
+    with open(output_path, mode='w') as f:
+        f = csv.writer(f, delimiter=',', quotechar='"')
+        f.writerow(['Compound', 'Pose', 'Score'])
+        for row in data:
+            f.writerow(row)
 
 
 # TODO: maybe yield the working dir
@@ -582,8 +602,8 @@ def create_tool(tool_name, command_name, executable):
 
 
 # NOTE: Rendering includes communication with pymol (cmd, etc.). May be decoupled from the Box class
-# because it is better to let the plugin handle the rendering and the communication with PyMol
-# we can let the box just return CGO objects maybe?
+# let the plugin handle the rendering and communication with PyMol
+# the box can just return CGO objects?
 class Box:
     class __Box:
         def __init__(self) -> None:
@@ -871,15 +891,7 @@ class Box:
 
 
 class Ligand:
-    """
-        attributes:
-            name - acts as an ID
-            pdb - the path to the pdb (or .gro, .mol2, etc.) file, if any
-            pdbqt - the path to the generated pdbqt file, if any
-            fromPymol - flag that tracks if the ligand is loaded from the user's local system, or from pymol
-            isPrepared - flag that tracks if the ligand is prepared or not (if prepared, it's ready to use in docking)
-    """
-
+   
     def __init__(self, name, pdb, onPrepared=None) -> None:
         self.name = name
         self.pdb = pdb
@@ -902,13 +914,6 @@ class Ligand:
 
 
 class Receptor:
-    """
-        attributes:
-            selection
-            name - should act as an unique identifier (ID)
-            pdbqt_location - the path to the generated/to be generated pdbqt file of the receptor
-            flexible_residues - a list (dictionary) of the flexible residues of the receptor
-    """
 
     def __init__(self, receptor_name=None, receptor_pdbqt=None, onReceptorAdded=None) -> None:
         self.selection = None
@@ -1151,6 +1156,7 @@ class DockingJobController(BaseController):
         self.form.runDocking_btn.setEnabled(True)
         self.form.runMultipleDocking_btn.setEnabled(True)
         self.logger.info(msg)
+        self.form.vinaoutput_txt.setText(adContext.config['output_file'])
         self.form.loadResults_btn.click()
 
 
@@ -1791,7 +1797,15 @@ class ResultsModel(QtCore.QAbstractTableModel):
 
     def data(self, index, role):
         if role == QtCore.Qt.DisplayRole:
-            return self._data[index.row()][index.column()]
+            value = self._data[index.row()][index.column()]
+            
+            if isinstance(value, float):
+                return "%.2f" % value
+            
+            if isinstance(value, str):
+                return '"%s"' % value
+        
+            return value
 
     def rowCount(self, index):
         return len(self._data)
@@ -1857,6 +1871,9 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
         if self.tool_names is None:
             print('AutoDok Tools could not be found in your system!')
             return
+
+        # TODO: check if autogrid path is specified, and create_tool with the full autogrid path as command
+
 
         if in_path('autogrid4'):
             cls_name = clsname_from_cmdname('autogrid4')
@@ -2052,8 +2069,6 @@ def make_dialog():
 
     # create a new Window
     qDialog = QtWidgets.QDialog()
-    saveTo = ''
-    # AUTODOCK_PATH = '/home/jurgen/mgltools_x86_64Linux2_1.5.7/MGLToolsPckgs/AutoDockTools/Utilities24'
 
     # populate the Window from our *.ui file which was created with the Qt Designer
     uifile = os.path.join(os.path.dirname(__file__), 'demowidget.ui')
@@ -2078,9 +2093,7 @@ def make_dialog():
         form.scoring_comboBox.setCurrentText(adContext.config['dockingjob_params']['scoring'])
 
         # Initiates the table view model for the results table
-        myTableModel = ResultsModel(data=[[1, 2, 3], [1, -1, 1], [3, 5, 2], [1, 1, 1]])
-        #myTableModel.setHorizontalHeaderLabels(['Rank', 'Name', 'Energy'])
-        #myTableModel.verticalHeader().hide()
+        myTableModel = ResultsModel(data=[[]])
         form.results_model = myTableModel
         form.results_table.setModel(form.results_model)
 
@@ -2515,7 +2528,18 @@ def make_dialog():
             form.results_model.setData(formatted_scores)
             form.results_model.layoutChanged.emit()
 
+    def OnExportResults():
+        adContext = ADContext()
+        output_file = adContext.config['output_file']
 
+        if str(form.csvPath_txt.text()) == '' or output_file == None:
+            return
+
+        # Read results (results are not loaded and stored inside the app)
+        best_pose_only = form.bestPose_checkBox.isChecked()
+        scores = get_scores(output_file, best_pose_only)
+        formatted_scores = format_scores(scores)
+        export_csv(adContext.config['working_dir'], str(form.csvPath_txt.text()), formatted_scores)
 
 
     # NOTE: doesn't change the environment of the application (i.e. executing cd will not change the current
@@ -2612,6 +2636,8 @@ def make_dialog():
 
     form.shellInput_txt.returnPressed.connect(OnShellCommandSubmitted)
     form.loadResults_btn.clicked.connect(OnLoadResults)
+
+    form.exportCSV_btn.clicked.connect(OnExportResults)
 
     startup()
 
