@@ -1062,8 +1062,6 @@ class BoxAPI:
             f.write("size_y = " + str(box.dim.y) + '\n')
             f.write("size_z = " + str(box.dim.z) + '\n')
 
-            # if vinaOutput != '':
-            #     f.write("out = " + vinaOutput + '\n')
 
     # TODO: handle the case when the name changes
     # Explicit function to render and hide the box (why not?)
@@ -2199,8 +2197,8 @@ def make_dialog():
         updateGUIdata()
 
     def save_config():
-        vinaout = form.vinaoutput.text()
-        boxAPI.save_box("config.txt", vinaout)
+        #vinaout = form.vinaoutput.text()
+        boxAPI.save_box("config.txt", "")
         # boxAPI.saveBox(saveTo)
 
     # TODO: add save functionality
@@ -2210,8 +2208,8 @@ def make_dialog():
         )
         global saveTo
         saveTo = filename
-        vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
-        boxAPI.save_box(filename, vinaout)
+        #vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
+        boxAPI.save_box(filename, "vinaout")
         # adContext.config['box_path'] = filename
 
     def browse():
