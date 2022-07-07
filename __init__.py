@@ -11,6 +11,7 @@ from email.charset import add_alias
 import os
 import sys
 import math
+import json
 
 import errno
 from contextlib import contextmanager
@@ -1830,11 +1831,11 @@ class Vina:
         command_name = 'vina'
 
         if not VINA_MODULE_LOADED and not VINA_IN_PATH:
-            if adContext.vina_tools_path is None:
+            if adContext.config['vina_path'] is None:
                 print('ADContext here: vina_path not specified, returning')
                 return None
             else:
-                full_command = os.path.join(adContext.vina_tools_path, command_name)
+                full_command = os.path.join(adContext.config['vina_path'], command_name)
         else:
             full_command = 'vina'
 
@@ -1857,12 +1858,12 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
         if self.AD_MODULE_LOADED:
             self.tool_names = ['prepare_gpf', 'autogrid4', 'prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
         else:
-            if adContext.ad_tools_path is None:
+            if adContext.config['ad_tools_path'] is None:
                 print('ADContext here: AutoDockTools path not specified, returning')
                 return
 
-            self.tool_names = [f for f in os.listdir(adContext.ad_tools_path) if os.path.isfile(os.path.join(
-                adContext.ad_tools_path, f))]
+            self.tool_names = [f for f in os.listdir(adContext.config['ad_tools_path']) if os.path.isfile(os.path.join(
+                adContext.config['ad_tools_path'], f))]
 
     def load_commands(self):
         tools = {}
@@ -1932,7 +1933,7 @@ class ADContext:
             self.gpf = None
 
             # TODO: remove those from config dict
-            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_python_path': None, 'box_path': None, 'output_file': None,
+            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_python_path': None, 'last_saved_box_path': None, 'box_path': None, 'output_file': None,
                            'dockingjob_params': {
                                'exhaustiveness': 8,
                                'n_poses': 9,
@@ -2076,6 +2077,8 @@ def make_dialog():
 
     adContext.setForm(form)
 
+    plugin_directory = os.path.dirname(__file__)
+
     logger = logging.getLogger(__name__)
 
     """ Multiple handlers can be created if you want to broadcast to many destinations. """
@@ -2086,6 +2089,38 @@ def make_dialog():
     logger.setLevel(logging.DEBUG)
 
     def startup():
+        
+        if os.path.isfile(os.path.join(plugin_directory, 'config.json')):
+            with open(os.path.join(plugin_directory, 'config.json'), 'r') as f:
+                config_data = json.load(f)
+            
+            adContext.config['mgl_python_path'] = config_data['mgl_python_path']
+            form.mglbinPath_txt.setText(adContext.config['mgl_python_path'])
+
+            adContext.config['ad_tools_path'] = config_data['ad_tools_path']
+            form.adToolsPath_txt.setText(adContext.config['ad_tools_path'])
+
+            adContext.config['vina_path'] = config_data['vina_path']
+            form.vinaPath_txt.setText(adContext.config['vina_path'])
+
+            adContext.config['working_dir'] = config_data['working_dir']
+            form.workignDir_txt.setText(adContext.config['working_dir'])
+
+            adContext.config['box_path'] = config_data['box_path']
+            form.configPath_txt.setText(adContext.config['box_path'])
+
+        else:
+            config_data = {}
+
+            config_data['mgl_python_path'] = ''
+            config_data['ad_tools_path'] = ''
+            config_data['vina_path'] = ''
+            config_data['working_dir'] = ''
+            config_data['box_path'] = ''
+
+            with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+                json.dump(adContext.config, f)
+
         form.exhaust_txt.setText(str(adContext.config['dockingjob_params']['exhaustiveness']))
         form.numPoses_txt.setText(str(adContext.config['dockingjob_params']['n_poses']))
         form.energyRange_txt.setText(str(adContext.config['dockingjob_params']['energy_range']))
@@ -2176,7 +2211,8 @@ def make_dialog():
 
     ########################## <Callbacks> #############################
 
-    def update():
+    def update_box():
+        adContext = ADContext()
         if boxAPI.box_exists():
             centerX = form.centerX.value()
             centerY = form.centerY.value()
@@ -2187,6 +2223,19 @@ def make_dialog():
 
             boxAPI.set_center(centerX, centerY, centerZ)
             boxAPI.set_dim(dimX, dimY, dimZ)
+            working_dir = adContext.config['working_dir']
+            if adContext.config['working_dir'] is not None:
+               if working_dir == None:
+                   working_dir = '' 
+
+            box_save_path = os.path.join(working_dir, "current_box.txt")
+            try:
+                boxAPI.save_box(box_save_path, '')
+                adContext.config['box_path'] = box_save_path
+                form.configPath_txt.setText(adContext.config['box_path'])
+            except Exception as e:
+                raise e
+
 
     def gen_box():
         selection = form.selection_txt.text().strip() if form.selection_txt.text() != '' else '(sele)'
@@ -2194,14 +2243,22 @@ def make_dialog():
         updateGUIdata()
 
     def get_config():
-        filename = form.config_txt.text() if form.config_txt.text() != '' else "config.txt"
+        # When reading a box, the save button should act upon the path from which the box was loaded
+        adContext = ADContext()
+        filename = form.config_txt.text()
+        if filename == '':
+            logger.info("Please specify the path of the file first!")
+            return
         boxAPI.read_box(filename)
         updateGUIdata()
+        adContext.config['last_saved_box_path'] = filename
 
     def save_config():
-        vinaout = form.vinaoutput.text()
-        boxAPI.save_box("config.txt", vinaout)
-        # boxAPI.saveBox(saveTo)
+        adContext = ADContext()
+        if adContext.config['last_saved_box_path'] is not None:
+            boxAPI.save_box(adContext.config['last_saved_box_path'], '')
+        else:
+            saveAs_config()
 
     # TODO: add save functionality
     def saveAs_config():
@@ -2209,9 +2266,10 @@ def make_dialog():
             qDialog, 'Save As...', filter='All Files (*.*)'
         )
         global saveTo
-        saveTo = filename
-        vinaout = form.vinaoutput.text() if form.vinaoutput.text() != '' else 'result'
-        boxAPI.save_box(filename, vinaout)
+        saveTo = filename 
+        boxAPI.save_box(filename, '')
+        # When using the Save as button, the save button will act upon that path
+        adContext.config['last_saved_box_path'] = filename
         # adContext.config['box_path'] = filename
 
     def browse():
@@ -2437,6 +2495,9 @@ def make_dialog():
             form.mglbinPath_txt.setText(filename[0])
             adContext.config['mgl_python_path'] = filename[0]
             logger.info(adContext.config['mgl_python_path'])
+            with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+                json.dump(adContext.config, f)
+            
 
     def OnBrowseADToolsClicked():
         # dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
@@ -2446,16 +2507,20 @@ def make_dialog():
 
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['ad_tools_path'] = dir_name
-        adContext.set_ad_tools_path(dir_name)
-        logger.info("ad_tools_path = {}".format(adContext.ad_tools_path))
+        #adContext.set_ad_tools_path(dir_name)
+        logger.info("ad_tools_path = {}".format(adContext.config['ad_tools_path']))
         form.adToolsPath_txt.setText(dir_name)
+        with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+            json.dump(adContext.config, f)
 
     def OnBrowseVinaClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['vina_path'] = dir_name
-        adContext.set_vina_tools_path(dir_name)
+        #adContext.set_vina_tools_path(dir_name)
         logger.info(f'vina_path = {dir_name}')
         form.vinaPath_txt.setText(dir_name)
+        with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+            json.dump(adContext.config, f)
 
     def OnBrowseConfigClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
@@ -2466,12 +2531,16 @@ def make_dialog():
             form.configPath_txt.setText(filename[0])
             adContext.config['box_path'] = filename[0]
             logger.info(adContext.config['box_path'])
+            with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+                json.dump(adContext.config, f)
 
     def OnBrowseWorkingDirClicked():
         dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
         adContext.config['working_dir'] = dir_name
         logger.info(f'working_dir = {dir_name}')
         form.workignDir_txt.setText(dir_name)
+        with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+            json.dump(adContext.config, f)
 
     def onPHChange():
         adContext.config['ligandjob_params']['ph'] = float(
@@ -2578,12 +2647,12 @@ def make_dialog():
     ########################## </Callbacks> #############################
 
     # bind callbacks
-    form.centerX.valueChanged.connect(update)
-    form.centerY.valueChanged.connect(update)
-    form.centerZ.valueChanged.connect(update)
-    form.dimX.valueChanged.connect(update)
-    form.dimY.valueChanged.connect(update)
-    form.dimZ.valueChanged.connect(update)
+    form.centerX.valueChanged.connect(update_box)
+    form.centerY.valueChanged.connect(update_box)
+    form.centerZ.valueChanged.connect(update_box)
+    form.dimX.valueChanged.connect(update_box)
+    form.dimY.valueChanged.connect(update_box)
+    form.dimZ.valueChanged.connect(update_box)
     form.step_size.valueChanged.connect(updateStepSize)
     form.getConfig_btn.clicked.connect(get_config)
     form.save_btn.clicked.connect(save_config)
