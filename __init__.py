@@ -534,7 +534,8 @@ class CustomCommand(object):
             with p.stderr:
                 for line in iter(p.stderr.readline, b''):
                     stderr.append(line.decode('utf-8'))
-                    print(line.decode('utf-8'))
+                    self.logging_module.log(line.decode('utf-8'))
+                    #print(line.decode('utf-8'))
 
             p.wait()
 
@@ -554,7 +555,8 @@ class CustomCommand(object):
         try:
             p = PopenWithInput(cmd)
         except Exception as e:
-            print("Error setting up the command! Check if the paths are specified correctly!")
+            #print("Error setting up the command! Check if the paths are specified correctly!")
+            self.logging_module.log("Error setting up the command! Check if the paths are specified correctly!")
             self.logging_module.log(str(e))
             raise
 
@@ -1297,13 +1299,13 @@ class VinaWorker(QtCore.QObject):
                 if rc == 0:
                     self.progress.emit("Success!")
                     # self.finished.emit(stdout.decode('utf-8'))
+                    output_path = arg_dict['out'] if 'out' in arg_dict else arg_dict['dir']
+                    adContext.config['output_file'] = os.path.join(working_dir, output_path)
                 else:
-                    self.progress.emit("Failed!")
+                    self.progress.emit(stderr.decode('utf-8'))
             except Exception as e:
                 self.finished.emit(str(e))
-
-        output_path = arg_dict['out'] if 'out' in arg_dict else arg_dict['dir']
-        adContext.config['output_file'] = os.path.join(working_dir, output_path)
+        
         self.finished.emit('Docking thread finished!')
         
     def ad_docking(self, ligand, receptor):
