@@ -52,7 +52,6 @@ WORK_DIR = os.getcwd()
 ################################################## Helpers #############################################################
 
 def get_scores(results_path, best_pose_only=True):
-    import os
     from os import listdir
     from os.path import isfile, join
     
@@ -107,6 +106,10 @@ def get_scores(results_path, best_pose_only=True):
 
     return results_dict
     #print(result_dict)
+
+def get_result_files(results_path, best_pose_only=True):
+    """ Used if graphical loading of the results is needed. """
+    pass
 
 def format_scores(results_dict):
     data = []
@@ -1123,7 +1126,7 @@ class DockingJobController(BaseController):
 
     def _get_logger(self) -> Any:
         return self.loggerFactory \
-            .giff_me_logger(name=__name__,
+            .giff_me_logger(name=type(self).__name__,
                             level=logging.DEBUG,
                             destination=self.form.dockingLogBox)
 
@@ -1448,7 +1451,7 @@ class LigandJobController(BaseController):
         self.prepare()
 
     def _get_logger(self):
-        return self.loggerFactory.giff_me_logger(name=__name__, level=logging.DEBUG, destination=self.form.ligandLogBox)
+        return self.loggerFactory.giff_me_logger(name=type(self).__name__, level=logging.DEBUG, destination=self.form.ligandLogBox)
 
     """ Load an imported ligand to the list of ligands (not prepared). """
 
@@ -1644,7 +1647,7 @@ class RigidReceptorController(BaseController):
 
     def _get_logger(self):
         return self.loggerFactory \
-            .giff_me_logger(name=__name__,
+            .giff_me_logger(name=type(self).__name__,
                             level=logging.DEBUG,
                             destination=self.form.receptorLogBox)
 
@@ -1699,7 +1702,7 @@ class FlexibleReceptorController(BaseController):
         super(FlexibleReceptorController, self).__init__(form, callbacks)
 
     def _get_logger(self):
-        return self.loggerFactory.giff_me_logger(name=__name__, level=logging.DEBUG,
+        return self.loggerFactory.giff_me_logger(name=type(self).__name__, level=logging.DEBUG,
                                                  destination=self.form.receptorLogBox)
 
     def run(self):
@@ -2249,7 +2252,7 @@ def make_dialog():
         adContext = ADContext()
         filename = form.config_txt.text()
         if filename == '':
-            logger.info("Please specify the path of the file first!")
+            logger.info("Please specify the path of the box first!")
             return
         boxAPI.read_box(filename)
         updateGUIdata()
@@ -2595,9 +2598,12 @@ def make_dialog():
             # get scores, and notify the tableview
             scores = get_scores(output_file, best_pose_only)
             formatted_scores = format_scores(scores)
-            print(formatted_scores)
+            
             form.results_model.setData(formatted_scores)
             form.results_model.layoutChanged.emit()
+
+            # load graphically
+
 
     def OnExportResults():
         adContext = ADContext()
