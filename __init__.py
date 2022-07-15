@@ -99,13 +99,16 @@ def get_scores(results_path, best_pose_only=True):
     results_dict = {}
     #print(results_files)
     for f in results_files:
+
+        # taking care of backslashes - added by python when joining paths
+        if "\\" in f:
+            ligand_name = f.split("\\")[-1]
         ligand_name = f.split('.')[0]
+        # TODO: refactor the filename manipulation
         compound_scores = process_vina_result_file(join(results_path, f))
         results_dict[ligand_name] = compound_scores
-            
-
+        
     return results_dict
-    #print(result_dict)
 
 def get_result_files(results_path, best_pose_only=True):
     """ Used if graphical loading of the results is needed. """
@@ -230,6 +233,12 @@ def absolute_path(*args):
 
     return os.path.realpath(os.path.expandvars(os.path.expanduser(os.path.join(*args))))
 
+def filename_from_absolute(absolute_path):
+    split1 = absolute_path.split('/')[-1]
+    if("\\" in split1):
+        split1 = split1.split("\\")[-1]
+    
+    return split1.split('.')[0]
 
 def execute_command(command):
     env = dict(os.environ)
@@ -1194,24 +1203,25 @@ class DockingJobController(BaseController):
         # Everytime we generate a gpf, the file is overridden "with" the new ligand. Rigid pdbqt will be used if
         # flexible docking.
         receptor_pdbqt = "{}.pdbqt".format(saved_receptor_name)  # receptor_pdbqt will be the rigid pdbqt if flexible
+        receptor_pdbqt_dir = os.path.dirname(receptor_pdbqt)
 
-        try:
-            (rc, stdout, stderr) = autoDock.prepare_gpf(l=ligand.pdbqt, r=receptor_pdbqt, o=receptor_gpf,
-                                                         y=True)
-            if rc == 0:
-                receptor.gpf = receptor_gpf
-                self.logger.info("GPF for the {}_{} complex ready!".format(ligand.name, receptor.name))
-            else:
-                self.logger.error("Couldn't generate GPF for the {}_{} complex!".format(ligand.name, receptor.name))
+        with while_in_dir(receptor_pdbqt_dir): # TODO: this cd-s to receptor pdbqt dir, which may be different than ligand dir, working_dir may be a better approach
+            try:
+
+                (rc, stdout, stderr) = autoDock.prepare_gpf(l=ligand.pdbqt, r=receptor_pdbqt, o=receptor_gpf,
+                                                            y=True)
+                if rc == 0:
+                    receptor.gpf = receptor_gpf
+                    self.logger.info("GPF for the {}_{} complex ready!".format(ligand.name, receptor.name))
+                else:
+                    self.logger.error("Couldn't generate GPF for the {}_{} complex!".format(ligand.name, receptor.name))
+                    return
+
+            except Exception as e:
+                self.logger.error(repr(e))
+                self.logger.error("An error occurred preparing gpf!")
                 return
 
-        except Exception as e:
-            self.logger.error(repr(e))
-            self.logger.error("An error occurred preparing gpf!")
-            return
-
-        receptor_pdbqt_dir = os.path.dirname(receptor_pdbqt)
-        with while_in_dir(receptor_pdbqt_dir):
             try:
                 (rc, stdout, stderr) = autoDock.autogrid(p="{}.gpf".format(saved_receptor_name),
                                                           l="{}.glg".format(saved_receptor_name))
@@ -1220,8 +1230,9 @@ class DockingJobController(BaseController):
                 else:
                     self.logger.error("Could not generate affinity maps for the {}_{} complex!".format(ligand.name,
                                                                                                        receptor.name))
-            except Exception as e:
+            except KeyError as e:
                 self.logger.error(str(e))
+                self.logger.error("Autogrid executable not found!")
                 return
 
 
@@ -1253,7 +1264,6 @@ class VinaWorker(QtCore.QObject):
         logging_module = SignalAdapter(self.progress)
         self.vina.vina.attach_logging_module(logging_module)
         working_dir = adContext.config['working_dir']
-        success_flag = True
 
         # make sure there are ligands to dock
         ligands_to_dock = adContext.ligands_to_dock
@@ -1270,7 +1280,6 @@ class VinaWorker(QtCore.QObject):
         case of multiple docking, each ligand will be run on flexible residues if the receptor has flexible residues. 
         If there are ligands to be run with rigid docking, than make sure there is another receptor with rigid residues. 
         """
-        # TODO: add an arg_dict to make the command execution more readable
         with while_in_dir(working_dir):
 
             if len(ligands_to_dock) == 1:
@@ -1305,7 +1314,7 @@ class VinaWorker(QtCore.QObject):
                     output_path = arg_dict['out'] if 'out' in arg_dict else arg_dict['dir']
                     adContext.config['output_file'] = os.path.join(working_dir, output_path)
                 else:
-                    self.progress.emit(stderr.decode('utf-8'))
+                    self.progress.emit(stderr)
             except Exception as e:
                 self.finished.emit(str(e))
         
@@ -1321,23 +1330,24 @@ class VinaWorker(QtCore.QObject):
             return
 
         if flex_docking:
-            rigid_receptor = receptor.rigid_pdbqt
-            saved_rigid_receptor_name = receptor.rigid_pdbqt.split('/')[-1].split('.')[0]
+            rigid_receptor_pdbqt = receptor.rigid_pdbqt
+            saved_rigid_receptor_name = filename_from_absolute(rigid_receptor_pdbqt)
             flex_receptor = receptor.flex_pdbqt
-            if flex_receptor is not None and rigid_receptor is not None:
+            if flex_receptor is not None and rigid_receptor_pdbqt is not None:
                 output_file = "ad_vina_result_{}_flexible.pdbqt".format(receptor.name)
-                with while_in_dir(receptor_maps_dir):
-                    arg_dict.update(flex=flex_receptor,
-                                    ligand=ligand.pdbqt,
-                                    maps=saved_rigid_receptor_name,
-                                    out=output_file)
-        else:
-            saved_receptor_name = receptor.pdbqt_location.split('/')[-1].split('.')[0]
-            output_file = "ad_vina_result_{}.pdbqt".format(receptor.name)
-            with while_in_dir(receptor_maps_dir):
-                arg_dict.update(ligand=ligand.pdbqt,
-                                maps=saved_receptor_name,
+                
+                arg_dict.update(flex=flex_receptor,
+                                ligand=ligand.pdbqt,
+                                maps=saved_rigid_receptor_name,
                                 out=output_file)
+        else:
+            saved_receptor_name = filename_from_absolute(receptor.pdbqt_location)
+            print("Maps folder = {}".format(saved_receptor_name))
+            output_file = "ad_vina_result_{}.pdbqt".format(receptor.name)
+            
+            arg_dict.update(ligand=ligand.pdbqt,
+                            maps=saved_receptor_name,
+                            out=output_file)
 
         return arg_dict
 
@@ -1867,6 +1877,7 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
                 print('ADContext here: AutoDockTools path not specified, returning')
                 return
 
+            # save the absolute pathes 
             self.tool_names = [f for f in os.listdir(adContext.config['ad_tools_path']) if os.path.isfile(os.path.join(
                 adContext.config['ad_tools_path'], f))]
 
@@ -1875,17 +1886,15 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
         adContext = ADContext()
 
         if self.tool_names is None:
-            print('AutoDok Tools could not be found in your system!')
+            print('AutoDock Tools could not be found in your system!')
             return
 
-        # TODO: check if autogrid path is specified, and create_tool with the full autogrid path as command
-
-
-        if in_path('autogrid4'):
-            cls_name = clsname_from_cmdname('autogrid4')
-            tools[cls_name.lower()] = create_tool(cls_name, 'autogrid4', None)
+        # Special care taken for autogrid4 executable
+        if adContext.config['autogrid_path'] is None:
+            print('AUTOGRID path not found!')
         else:
-            print('autogrid4 not in path!')
+            full_command = adContext.config['autogrid_path']
+            tools['autogrid'] = create_tool('Autogrid', full_command, None)()
 
         for command_name in self.tool_names:
             cls_name = clsname_from_cmdname(command_name)
@@ -1897,6 +1906,8 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
                 tools[cls_name.lower()] = create_tool(cls_name, full_command, None)()
 
             else:
+                # full command now contains the absoulte path; and the python executable is needed; if not provided, the CustomCommand
+                # will take care of including it, but it's success depends on the current system being used
                 full_command = os.path.join(adContext.config['ad_tools_path'], command_name)
                 tools[cls_name.lower()] = create_tool(cls_name, full_command, adContext.config['mgl_python_path'])()
 
@@ -1938,7 +1949,13 @@ class ADContext:
             self.gpf = None
 
             # TODO: remove those from config dict
-            self.config = {'vina_path': None, 'ad_tools_path': None, 'mgl_python_path': None, 'last_saved_box_path': None, 'box_path': None, 'output_file': None,
+            self.config = {'vina_path': None, 
+                           'ad_tools_path': None, 
+                           'mgl_python_path': None, 
+                           'last_saved_box_path': None, 
+                           'box_path': None, 
+                           'output_file': None,
+                           'autogrid_path': None,
                            'dockingjob_params': {
                                'exhaustiveness': 8,
                                'n_poses': 9,
@@ -2114,15 +2131,10 @@ def make_dialog():
             adContext.config['box_path'] = config_data['box_path']
             form.configPath_txt.setText(adContext.config['box_path'])
 
+            adContext.config['autogrid_path'] = config_data['autogrid_path']
+            form.autogridPath_txt.setText(adContext.config['autogrid_path'])
+
         else:
-            config_data = {}
-
-            config_data['mgl_python_path'] = ''
-            config_data['ad_tools_path'] = ''
-            config_data['vina_path'] = ''
-            config_data['working_dir'] = ''
-            config_data['box_path'] = ''
-
             with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
                 json.dump(adContext.config, f)
 
@@ -2547,6 +2559,20 @@ def make_dialog():
         with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
             json.dump(adContext.config, f)
 
+    def OnBrowseAutogridClicked():
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.autogridPath_txt.setText(filename[0])
+            adContext.config['autogrid_path'] = filename[0]
+            logger.info(adContext.config['autogrid_path'])
+            with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+                json.dump(adContext.config, f)
+
+        pass
+
     def onPHChange():
         adContext.config['ligandjob_params']['ph'] = float(
             form.exhaust_txt.text().strip()) if is_float(form.exhaust_txt.text().strip()) else 7.4
@@ -2708,7 +2734,7 @@ def make_dialog():
     form.browseVina_btn.clicked.connect(OnBrowseVinaClicked)
     form.browseConfig_btn.clicked.connect(OnBrowseConfigClicked)
     form.browseWorkDir_btn.clicked.connect(OnBrowseWorkingDirClicked)
-
+    form.browseAutogrid_btn.clicked.connect(OnBrowseAutogridClicked)
     # form.saveConfig_btn.clicked.connect(saveConfig)
 
     form.shellInput_txt.returnPressed.connect(OnShellCommandSubmitted)
