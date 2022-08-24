@@ -1,0 +1,1725 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="enabled">
+   <bool>true</bool>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>878</width>
+    <height>647</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>878</width>
+    <height>647</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>878</width>
+    <height>647</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>MAGI-Dock</string>
+  </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>../../.designer/backup/Face_colored_cube.png</normaloff>../../.designer/backup/Face_colored_cube.png</iconset>
+  </property>
+  <widget class="QDoubleSpinBox" name="centerY">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>175</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>-99999.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>99999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="centerZ">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>215</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>-99999.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>99999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="centerX">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>135</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>-99999.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>99999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="close_btn">
+   <property name="geometry">
+    <rect>
+     <x>785</x>
+     <y>310</y>
+     <width>85</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>140</y>
+     <width>67</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>CenterX:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>180</y>
+     <width>67</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>CenterY:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>220</y>
+     <width>67</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>CenterZ:</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="dimY">
+   <property name="geometry">
+    <rect>
+     <x>800</x>
+     <y>175</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>-99999.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>99999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="dimX">
+   <property name="geometry">
+    <rect>
+     <x>800</x>
+     <y>135</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="sizeIncrement">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="minimum">
+    <double>-99999.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>99999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>220</y>
+     <width>51</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>DimZ:</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="dimZ">
+   <property name="geometry">
+    <rect>
+     <x>800</x>
+     <y>215</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="minimum">
+    <double>-99999.000000000000000</double>
+   </property>
+   <property name="maximum">
+    <double>99999.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_5">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>180</y>
+     <width>51</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>DimY:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_6">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>140</y>
+     <width>51</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>DimX:</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="save_btn">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>310</y>
+     <width>85</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Save Box</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="getConfig_btn">
+   <property name="geometry">
+    <rect>
+     <x>790</x>
+     <y>40</y>
+     <width>81</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Get Box</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="config_txt">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>40</y>
+     <width>161</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="saveAs_btn">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>620</x>
+     <y>310</y>
+     <width>90</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Save Box As...</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="browse_btn">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>40</y>
+     <width>81</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Browse</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="step_size">
+   <property name="geometry">
+    <rect>
+     <x>800</x>
+     <y>260</y>
+     <width>65</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <property name="decimals">
+    <number>3</number>
+   </property>
+   <property name="maximum">
+    <double>2.000000000000000</double>
+   </property>
+   <property name="singleStep">
+    <double>0.025000000000000</double>
+   </property>
+   <property name="value">
+    <double>0.250000000000000</double>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_7">
+   <property name="geometry">
+    <rect>
+     <x>720</x>
+     <y>265</y>
+     <width>67</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Step Size:</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="showBox_ch">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>280</y>
+     <width>101</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+   <property name="text">
+    <string>Hide/Show</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="tristate">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QTabWidget" name="tabWidget">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>40</y>
+     <width>501</width>
+     <height>601</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
+   <property name="currentIndex">
+    <number>1</number>
+   </property>
+   <widget class="QWidget" name="config_tab">
+    <attribute name="title">
+     <string>Config</string>
+    </attribute>
+    <widget class="QLineEdit" name="adToolsPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>138</x>
+       <y>377</y>
+       <width>211</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vinaPath_txt">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>138</x>
+       <y>412</y>
+       <width>211</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="configPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>138</x>
+       <y>520</y>
+       <width>211</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_23">
+     <property name="geometry">
+      <rect>
+       <x>21</x>
+       <y>377</y>
+       <width>111</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>AutoDock Tools Folder:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_24">
+     <property name="geometry">
+      <rect>
+       <x>50</x>
+       <y>417</y>
+       <width>81</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Vina Executable:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_25">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>525</y>
+       <width>51</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Box Path:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseADTools_btn">
+     <property name="geometry">
+      <rect>
+       <x>358</x>
+       <y>377</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseVina_btn">
+     <property name="geometry">
+      <rect>
+       <x>358</x>
+       <y>412</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseConfig_btn">
+     <property name="geometry">
+      <rect>
+       <x>358</x>
+       <y>520</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="saveConfig_btn">
+     <property name="geometry">
+      <rect>
+       <x>760</x>
+       <y>350</y>
+       <width>89</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Save</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="workignDir_txt">
+     <property name="geometry">
+      <rect>
+       <x>138</x>
+       <y>484</y>
+       <width>211</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_30">
+     <property name="geometry">
+      <rect>
+       <x>66</x>
+       <y>484</y>
+       <width>61</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Working Dir:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseWorkDir_btn">
+     <property name="geometry">
+      <rect>
+       <x>358</x>
+       <y>484</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="introMessageBox">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>471</width>
+       <height>291</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+     <property name="plainText">
+      <string>In order to use this plugin, AutoDock scripts and Vina should be present in the system. For example, MGLTools comes with a set of AutoDock scripts that are used to work with receptors and ligands. It is highly recommended to install MGLTools, since it also contains the correct python version and environment to run the scripts. Just using the scripts is not guaranteed to work, since they rely in a lot of libraries that come with MGLTools installation.
+
+Autodock: Autodock and AutodockTools 4 are products of Scripps Research Institute. 
+Autodock 4 must be installed in the system, and the autogrid4.exe file should be present in the respective directory. 
+
+Vina: A vina executable file (vina.exe) must be present in order to run molecular docking.
+
+MGLTools 1.5.6/1.5.7: MGLTools should be installed, and the users must follow the instructions that come with the installation. The plugin will use the scripts and python environment that come with the MGLTools installation.
+
+In the case environment modules are present (this is usually the case when working with remote servers), the corresponding mgltools and vina modules should be loaded prior to running pymol, on the same shell (e.g. module load mgltools/1.5.7). There is no need to specify paths in the config section of the plugin, other than the working path and box path.
+
+In the case of personal computers (which would be the most popular option), the users have to make sure MGLTools is installed in their system and there is a vina executable somewhere in the system. The AutodockTools and Vina executable folder path should be specified in the config tab of the plugin before starting the docking steps.
+
+A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases)
+Autodock 4 can be found here: https://autodock.scripps.edu, and after the installation the executables can be found in: *C:\Program Files (x86)*\The Scripps Research Institute\Autodock\4.2.6
+
+Users may find the following guide helpful: https://shaker.umh.es/computing/computing063.asp, it was originally made for the Seeliger's Autodock Plugin, but works well for MAGI-Dock too.
+
+NOTIFICATIONS:
+Vina output file name is assigned automatically based on the name of the receptor.
+Whenever a box is generated or edited, the coordinates are saved in a default txt file, used automatically by vina. (Users have the freedom to change the config box file used by vina, as well as save specific coordinates in files of their choice.)
+
+</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_19">
+     <property name="geometry">
+      <rect>
+       <x>48</x>
+       <y>342</y>
+       <width>81</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>MGL python exe:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="mglbinPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>138</x>
+       <y>342</y>
+       <width>211</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseMGLbin_btn">
+     <property name="geometry">
+      <rect>
+       <x>357</x>
+       <y>342</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="autogridPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>138</x>
+       <y>447</y>
+       <width>211</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_22">
+     <property name="geometry">
+      <rect>
+       <x>32</x>
+       <y>447</y>
+       <width>101</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Autogrid Executable:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseAutogrid_btn">
+     <property name="geometry">
+      <rect>
+       <x>358</x>
+       <y>447</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="focusPolicy">
+      <enum>Qt::NoFocus</enum>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="receptor_tab">
+    <attribute name="title">
+     <string>Receptor</string>
+    </attribute>
+    <widget class="QLabel" name="label_10">
+     <property name="geometry">
+      <rect>
+       <x>45</x>
+       <y>25</y>
+       <width>51</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Receptor:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="receptorPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>20</y>
+       <width>200</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseReceptor_btn">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>20</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loadReceptor_btn">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>20</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="genFlexible_btn">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>207</y>
+       <width>111</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Generate Flexible</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_11">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>60</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PyMol selections</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_12">
+     <property name="geometry">
+      <rect>
+       <x>380</x>
+       <y>60</y>
+       <width>91</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Flex. Residues</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_13">
+     <property name="geometry">
+      <rect>
+       <x>270</x>
+       <y>60</y>
+       <width>121</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Gen. Receptors</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="genReceptor_btn">
+     <property name="geometry">
+      <rect>
+       <x>150</x>
+       <y>176</y>
+       <width>111</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Generate Receptor</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="sele_lstw">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>80</y>
+       <width>121</width>
+       <height>151</height>
+      </rect>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="receptor_lstw">
+     <property name="geometry">
+      <rect>
+       <x>270</x>
+       <y>80</y>
+       <width>101</width>
+       <height>151</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="flexRes_lstw">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>380</x>
+       <y>80</y>
+       <width>101</width>
+       <height>151</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="receptorLogBox">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>300</y>
+       <width>465</width>
+       <height>271</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_27">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>280</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Receptor console</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="checkBox_addHydrogens_receptor">
+     <property name="geometry">
+      <rect>
+       <x>180</x>
+       <y>110</y>
+       <width>51</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add H</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="ligands_tab">
+    <attribute name="title">
+     <string>Ligands</string>
+    </attribute>
+    <widget class="QListWidget" name="ligands_lstw">
+     <property name="geometry">
+      <rect>
+       <x>142</x>
+       <y>110</y>
+       <width>101</width>
+       <height>121</height>
+      </rect>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_14">
+     <property name="geometry">
+      <rect>
+       <x>145</x>
+       <y>90</y>
+       <width>67</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ligands</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="genLigands_btn">
+     <property name="geometry">
+      <rect>
+       <x>263</x>
+       <y>202</y>
+       <width>91</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Generate &gt;&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="ligandPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>20</y>
+       <width>200</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_15">
+     <property name="geometry">
+      <rect>
+       <x>60</x>
+       <y>25</y>
+       <width>41</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ligand:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browseLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>310</x>
+       <y>20</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loadLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>20</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="preparedLigands_lstw">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>110</y>
+       <width>101</width>
+       <height>121</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="Test tooltip"/>
+     </property>
+     <property name="toolTipDuration">
+      <number>3</number>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_16">
+     <property name="geometry">
+      <rect>
+       <x>370</x>
+       <y>90</y>
+       <width>91</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Prepared Ligands</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="sele_lstw_2">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>80</y>
+       <width>121</width>
+       <height>151</height>
+      </rect>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::ExtendedSelection</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_17">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>60</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>PyMol selections</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="removeLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>142</x>
+       <y>236</y>
+       <width>61</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Remove</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="addLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>236</y>
+       <width>61</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Add</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="checkBox_hydrogens">
+     <property name="geometry">
+      <rect>
+       <x>264</x>
+       <y>120</y>
+       <width>91</width>
+       <height>23</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Check Hydrogens</string>
+     </property>
+    </widget>
+    <widget class="QPlainTextEdit" name="ligandLogBox">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>300</y>
+       <width>465</width>
+       <height>271</height>
+      </rect>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
+     </property>
+     <property name="tabChangesFocus">
+      <bool>false</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_28">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>280</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Ligand console</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="docking_tab">
+    <attribute name="title">
+     <string>Docking</string>
+    </attribute>
+    <widget class="QLineEdit" name="preparedLigand_txt">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>30</y>
+       <width>141</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="runDocking_btn">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>270</y>
+       <width>131</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Run Docking Job</string>
+     </property>
+    </widget>
+    <widget class="QListWidget" name="preparedLigands_lstw_2">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>340</x>
+       <y>30</y>
+       <width>131</width>
+       <height>181</height>
+      </rect>
+     </property>
+     <property name="toolTip">
+      <string extracomment="Test tooltip"/>
+     </property>
+     <property name="toolTipDuration">
+      <number>3</number>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::MultiSelection</enum>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_18">
+     <property name="geometry">
+      <rect>
+       <x>340</x>
+       <y>10</y>
+       <width>131</width>
+       <height>20</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Prepared Ligands:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="browsePreparedLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>30</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Browse</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="loadPreparedLigand_btn">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>30</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_20">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>10</y>
+       <width>131</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Prepared ligands:</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="loadedReceptor_txt">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>80</y>
+       <width>141</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_21">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>60</y>
+       <width>71</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Receptor</string>
+     </property>
+    </widget>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>110</y>
+       <width>301</width>
+       <height>101</height>
+      </rect>
+     </property>
+     <property name="title">
+      <string>Params</string>
+     </property>
+     <widget class="QLineEdit" name="exhaust_txt">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>31</y>
+        <width>31</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>false</bool>
+      </property>
+      <property name="clearButtonEnabled">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_26">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>32</y>
+        <width>81</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Exhaustiveness:</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="numPoses_txt">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>261</x>
+        <y>31</y>
+        <width>31</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>false</bool>
+      </property>
+      <property name="clearButtonEnabled">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_32">
+      <property name="geometry">
+       <rect>
+        <x>195</x>
+        <y>32</y>
+        <width>71</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Num. Poses:</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="energyRange_txt">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>90</x>
+        <y>70</y>
+        <width>31</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>false</bool>
+      </property>
+      <property name="clearButtonEnabled">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="minRMSD_txt">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>261</x>
+        <y>70</y>
+        <width>31</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="readOnly">
+       <bool>false</bool>
+      </property>
+      <property name="clearButtonEnabled">
+       <bool>false</bool>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_31">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>68</y>
+        <width>71</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Energy range:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label_33">
+      <property name="geometry">
+       <rect>
+        <x>200</x>
+        <y>72</y>
+        <width>61</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Min. RMSD:</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QPlainTextEdit" name="dockingLogBox">
+     <property name="geometry">
+      <rect>
+       <x>15</x>
+       <y>300</y>
+       <width>465</width>
+       <height>271</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="runMultipleDocking_btn">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>270</y>
+       <width>131</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Run Multiple Docking</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="scoring_comboBox">
+     <property name="geometry">
+      <rect>
+       <x>250</x>
+       <y>80</y>
+       <width>71</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <item>
+      <property name="text">
+       <string>vina</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ad4</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>vinardo</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QLabel" name="label_34">
+     <property name="geometry">
+      <rect>
+       <x>210</x>
+       <y>83</y>
+       <width>41</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Scoring:</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="generateAffinityMaps_btn">
+     <property name="geometry">
+      <rect>
+       <x>360</x>
+       <y>270</y>
+       <width>121</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Generate Affinity Maps</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="vinaoutput_txt">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="geometry">
+      <rect>
+       <x>100</x>
+       <y>218</y>
+       <width>151</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_8">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>221</y>
+       <width>81</width>
+       <height>17</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Vina output file:</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="results_tab">
+    <attribute name="title">
+     <string>Results</string>
+    </attribute>
+    <widget class="QTableView" name="results_table">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>10</y>
+       <width>481</width>
+       <height>481</height>
+      </rect>
+     </property>
+     <property name="sortingEnabled">
+      <bool>false</bool>
+     </property>
+     <attribute name="horizontalHeaderDefaultSectionSize">
+      <number>180</number>
+     </attribute>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+    </widget>
+    <widget class="QPushButton" name="loadResults_btn">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>500</y>
+       <width>101</width>
+       <height>24</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Load Results</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="bestPose_checkBox">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>500</y>
+       <width>131</width>
+       <height>22</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Best Pose Only</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="exportCSV_btn">
+     <property name="geometry">
+      <rect>
+       <x>390</x>
+       <y>540</y>
+       <width>101</width>
+       <height>25</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Export CSV</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="csvPath_txt">
+     <property name="geometry">
+      <rect>
+       <x>240</x>
+       <y>540</y>
+       <width>141</width>
+       <height>25</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+  </widget>
+  <widget class="QPlainTextEdit" name="plainTextEdit">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>350</y>
+     <width>341</width>
+     <height>261</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>9</pointsize>
+    </font>
+   </property>
+   <property name="cursor" stdset="0">
+    <cursorShape>IBeamCursor</cursorShape>
+   </property>
+   <property name="mouseTracking">
+    <bool>false</bool>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::WheelFocus</enum>
+   </property>
+   <property name="readOnly">
+    <bool>true</bool>
+   </property>
+   <property name="centerOnScroll">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="importSele_btn">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>89</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Refresh</string>
+   </property>
+  </widget>
+  <widget class="QCheckBox" name="fillBox_ch">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>260</y>
+     <width>51</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::ClickFocus</enum>
+   </property>
+   <property name="text">
+    <string>Fill</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="genBox_btn">
+   <property name="geometry">
+    <rect>
+     <x>770</x>
+     <y>90</y>
+     <width>101</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::NoFocus</enum>
+   </property>
+   <property name="text">
+    <string>Generate Box</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="selection_txt">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>90</y>
+     <width>231</width>
+     <height>25</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_9">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>70</y>
+     <width>181</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Generate Box from PyMOL Selection:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_29">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>20</y>
+     <width>101</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Load Box from File:</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="shellInput_txt">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>614</y>
+     <width>341</width>
+     <height>25</height>
+    </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::StrongFocus</enum>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -99,11 +99,11 @@ def get_scores(results_path, best_pose_only=True):
     results_dict = {}
     #print(results_files)
     for f in results_files:
-
+        ligand_name = f
         # taking care of backslashes - added by python when joining paths
-        if "\\" in f:
-            ligand_name = f.split("\\")[-1]
-        ligand_name = f.split('.')[0]
+        if "\\" in ligand_name:
+            ligand_name = ligand_name.split("\\")[-1]
+        ligand_name = ligand_name.split('.')[0]
         # TODO: refactor the filename manipulation
         compound_scores = process_vina_result_file(join(results_path, f))
         results_dict[ligand_name] = compound_scores
@@ -311,7 +311,7 @@ def __init_plugin__(app=None):
     """
     from pymol.plugins import addmenuitemqt
 
-    addmenuitemqt('Docking Box', run_plugin_gui)
+    addmenuitemqt('MAGI-Dock', run_plugin_gui)
 
 
 ########################################### Logging ####################################################################
@@ -363,7 +363,7 @@ class LoggerFactory:
 
     """NOTE: since currently new instances of Ligand and Receptors controllers are created for each action on ligands 
     or receptors, giff_me_logger is called multiple times, each time adding a handler to the logger with the same 
-    name (probably a logger is saved somewhere in the cache during runtime and is accessed multiple times attaching a 
+    name (probably a logger is saved in memory during runtime and is accessed multiple times attaching a 
     new handler to it, thus logging n+1 times. This method make sure to clear all previous handlers. """
 
     #  TODO: find a better way to handle this.
@@ -1178,6 +1178,11 @@ class DockingJobController(BaseController):
     def generateAffinityMaps(self, selectedLigands):
         """ Responsible for generating both gpf and affinity maps. """
 
+        if len(selctedLigands) == 0:
+            self.logger.error('Select a ligand first!')
+            return
+
+
         adContext = ADContext()
         autoDock = AutoDock()
         receptor = adContext.receptor
@@ -1186,6 +1191,11 @@ class DockingJobController(BaseController):
 
         if ligand.pdbqt is None:
             self.logger.error('The selected ligand is not prepared!')
+            return
+
+        if not hasattr(autoDock, "prepare_gpf") or not hasattr(autoDock, "autogrid"):
+            print("Prepare gpf or autogrid was not loaded correctly! Make sure the paths are specified!")
+            self.logger.error("Prepare gpf or autogrid was not loaded correctly! Make sure the paths are specified!")
             return
 
         autoDock.prepare_gpf.attach_logging_module(LoggerAdapter(self.logger))
@@ -1215,6 +1225,7 @@ class DockingJobController(BaseController):
                     self.logger.info("GPF for the {}_{} complex ready!".format(ligand.name, receptor.name))
                 else:
                     self.logger.error("Couldn't generate GPF for the {}_{} complex!".format(ligand.name, receptor.name))
+                    self.logger.error("Please make sure autodock is loaded!")
                     return
 
             except Exception as e:
@@ -1230,9 +1241,9 @@ class DockingJobController(BaseController):
                 else:
                     self.logger.error("Could not generate affinity maps for the {}_{} complex!".format(ligand.name,
                                                                                                        receptor.name))
-            except KeyError as e:
+            except Exception as e:
                 self.logger.error(str(e))
-                self.logger.error("Autogrid executable not found!")
+                self.logger.error("An error occurred trying to run autogrid, please check if the path is correct!")
                 return
 
 
@@ -1244,12 +1255,16 @@ class VinaWorker(QtCore.QObject):
         super(VinaWorker, self).__init__()
         self.form = form
         self.arg_dict = {}
-        self.default_args()
         self.multiple_ligands = multiple_ligands
         self.vina = vina
 
     def default_args(self):
         adContext = ADContext()
+
+        # no need to check dockingjob_params, since they have defaults
+        if adContext.config['box_path'] is None: # TODO: could define some new Exceptions classes
+            raise
+
         self.arg_dict.update(
             exhaustiveness=adContext.config['dockingjob_params']['exhaustiveness'],
             num_modes=adContext.config['dockingjob_params']['n_poses'],
@@ -1262,8 +1277,25 @@ class VinaWorker(QtCore.QObject):
     def run(self):
         adContext = ADContext()
         logging_module = SignalAdapter(self.progress)
+
+        try:
+            self.default_args()
+        except:
+            self.finished.emit("No Docking Box configuration provided! Please specify the box coordinates first!")
+            return
+
+        if not hasattr(self.vina, "vina"):
+            print("Vina was not loaded correctly! Make sure the paths are specified!")
+            self.finished.emit("Vina was not loaded correctly! Make sure the paths are specified!")
+            return
+
         self.vina.vina.attach_logging_module(logging_module)
+
         working_dir = adContext.config['working_dir']
+        if working_dir == None:
+            print("Please specify the working directory first!")
+            self.finished.emit("Please specify the working directory first!")
+            return
 
         # make sure there are ligands to dock
         ligands_to_dock = adContext.ligands_to_dock
@@ -1306,6 +1338,7 @@ class VinaWorker(QtCore.QObject):
 
             try:
                 #adContext.config['output_file'] == arg_dict['out']
+                # TODO: add missing affinity maps error handling
                 (rc, stdout, stderr) = self.vina.vina(**arg_dict)
                 self.progress.emit("return code = {}".format(rc))
                 if rc == 0:
@@ -1315,8 +1348,9 @@ class VinaWorker(QtCore.QObject):
                     adContext.config['output_file'] = os.path.join(working_dir, output_path)
                 else:
                     self.progress.emit(stderr)
-            except Exception as e:
-                self.finished.emit(str(e))
+            except KeyError as e:
+                self.progress.emit(str(e))
+                self.finished.emit("An error occurred trying to run vina, please check if the path is correct!")
         
         self.finished.emit('Docking thread finished!')
         
@@ -1334,7 +1368,7 @@ class VinaWorker(QtCore.QObject):
             saved_rigid_receptor_name = filename_from_absolute(rigid_receptor_pdbqt)
             flex_receptor = receptor.flex_pdbqt
             if flex_receptor is not None and rigid_receptor_pdbqt is not None:
-                output_file = "ad_vina_result_{}_flexible.pdbqt".format(receptor.name)
+                output_file = "ad_vina_result_{}_{}_flexible.pdbqt".format(receptor.name, ligand.name)
                 
                 arg_dict.update(flex=flex_receptor,
                                 ligand=ligand.pdbqt,
@@ -1343,7 +1377,7 @@ class VinaWorker(QtCore.QObject):
         else:
             saved_receptor_name = filename_from_absolute(receptor.pdbqt_location)
             print("Maps folder = {}".format(saved_receptor_name))
-            output_file = "ad_vina_result_{}.pdbqt".format(receptor.name)
+            output_file = "ad_vina_result_{}_{}.pdbqt".format(receptor.name, ligand.name)
             
             arg_dict.update(ligand=ligand.pdbqt,
                             maps=saved_receptor_name,
@@ -1361,7 +1395,7 @@ class VinaWorker(QtCore.QObject):
             rigid_receptor = receptor.rigid_pdbqt
             flex_receptor = receptor.flex_pdbqt
             if flex_receptor is not None and rigid_receptor is not None:
-                output_file = "vina_result_{}_flexible.pdbqt".format(receptor.name)
+                output_file = "vina_result_{}_{}_flexible.pdbqt".format(receptor.name, ligand.name)
                 arg_dict.update(receptor=rigid_receptor,
                                 flex=flex_receptor,
                                 ligand=ligand.pdbqt,
@@ -1370,7 +1404,7 @@ class VinaWorker(QtCore.QObject):
                 self.finished("When running flexible docking please generate the flexible receptor first!")
                 return
         else:
-            output_file = "vina_result_{}.pdbqt".format(receptor.name)
+            output_file = "vina_result_{}_{}.pdbqt".format(receptor.name, ligand.name)
             arg_dict.update(receptor=receptor.pdbqt_location,
                             ligand=ligand.pdbqt,
                             out=output_file)
@@ -1506,7 +1540,15 @@ class LigandJobController(BaseController):
     def add_ligands(self, ligand_widget_list):
         """ Used to add PyMOL ligands to the ligands widget (not prepared ligands).
         Iteration on every ligand is done here. """
+
+        if len(ligand_widget_list) == 0:
+            self.logger.error(
+                'Select the ligands please!'
+            )
+            return
+
         adContext = self.adContext
+
         for index, sele in enumerate(ligand_widget_list):
             ligand = Ligand(sele.text(), '')  # onPrepared=onPreparedLigandChange
             adContext.addLigand(ligand)
@@ -1514,7 +1556,15 @@ class LigandJobController(BaseController):
         self.logger.debug("Ligands added = {}".format(adContext.ligands))
 
     def remove_ligands(self, ligand_widget_list):
+
+        if len(ligand_widget_list) == 0:
+            self.logger.info(
+                'Select the ligands please!'
+            )
+            return
+
         adContext = self.adContext
+
         for index, item in enumerate(ligand_widget_list):
             adContext.removeLigand(item.text())
             # TODO: remove foreign ligand from pymol (optional)
@@ -1524,6 +1574,11 @@ class LigandJobController(BaseController):
     def prepare_ligands(self, ligand_widget_list):
         adContext = self.adContext
         ad = AutoDock()
+
+        # if not adContext.ad_tools_loaded:
+        #     self.logger.info("AutoDock tools are not loaded correctly! Make sure the paths are specified!")
+        #     return
+
         if len(ligand_widget_list) == 0:
             self.logger.info(
                 'Select a ligand please!'
@@ -1579,6 +1634,7 @@ class WorkerSignals(QtCore.QObject):
 
 class PreparationWorker(QtCore.QRunnable):
     """ Thread that deals with the actual process of ligand preparation. """
+    working_dir = None
 
     def __init__(self, form, ligands, ad):
         super(PreparationWorker, self).__init__()
@@ -1589,7 +1645,7 @@ class PreparationWorker(QtCore.QRunnable):
         self.ad = ad
         self.working_dir = self.adContext.config['working_dir']
         self.all_ligands = self.adContext.ligands
-        self._setup_logging()
+        #self._setup_logging()
         self.config = self.adContext.config['ligandjob_params']
 
     def _setup_logging(self):
@@ -1597,10 +1653,25 @@ class PreparationWorker(QtCore.QRunnable):
         self.ad.prepare_ligand.attach_logging_module(logging_module)
 
     def run(self):
+
+        if self.working_dir == None:
+            print("Please specify the working directory first!")
+            self.signals.error.emit("Please specify the working directory first!")
+            self.signals.finished.emit("")
+            return
+
+
         # adContext = self.adContext
+        if not hasattr(self.ad, 'prepare_ligand'): # TODO: if the tools loaded check is done in the prepare_ligands function, we can remove this
+            print("Prepare ligand was not loaded correctly! Make sure the paths are specified!")
+            self.signals.error.emit("Prepare ligand was not loaded correctly! Make sure the paths are specified!")
+            self.signals.finished.emit("")
+            return
+
         form = self.form
         ligands = self.ligands
-
+        self._setup_logging()
+        
         arg_dict = {}  # command options will be contained in this dictionary
         if form.checkBox_hydrogens.isChecked():
             arg_dict.update(A='checkhydrogens')
@@ -1664,7 +1735,7 @@ class RigidReceptorController(BaseController):
     def run(self):
         adContext = ADContext()
         ad = AutoDock()  # tools will be loaded here, it is ok to reload them every time we "hit" run
-        # all the mess with re-loading them whenever the path changed, was caused because, previously we would only
+        # all the mess with re-loading them whenever the path changed was caused because previously we would only
         # load the tools only when they were not already loaded (the if not adContext.ad_tools_loaded condition)
         # remove that
         # "Could not load AutoDock tools!" AutoDock class already takes care of that!
@@ -1673,13 +1744,26 @@ class RigidReceptorController(BaseController):
         # TODO: (future issue) remove form reference from here; better if the API classes do not know about the form
         form = self.form
         selection = form.sele_lstw.selectedItems()
+
+        if len(selection) == 0:
+            self.logger.error(
+                'Select a receptor please!'
+            )
+            return
+
         if len(selection) > 1:
             print('You can only have 1 receptor!')
             self.logger.error('You can only have 1 receptor!')
             return
+
         receptor_name = selection[0].text()
 
         working_dir = adContext.config['working_dir']
+        if working_dir == None:
+            print("Please specify the working directory first!")
+            self.logger.info("Please specify the working directory first!")
+            return
+
         receptor_pdb = os.path.join(working_dir, f'plg_{receptor_name}.pdb')
         receptor_pdbqt = os.path.join(working_dir, f'plg_{receptor_name}.pdbqt')
         receptor_pdb_dir = os.path.dirname(receptor_pdb)
@@ -1688,6 +1772,11 @@ class RigidReceptorController(BaseController):
             cmd.save(receptor_pdb, receptor_name)
         except cmd.QuietException:
             pass
+
+        if not hasattr(ad, 'prepare_receptor'):
+            print("Prepare receptor was not loaded correctly! Make sure the paths are specified!")
+            self.logger.error("Prepare receptor was not loaded correctly! Make sure the paths are specified!")
+            return
 
         ad.prepare_receptor.attach_logging_module(LoggerAdapter(self.logger))
         arg_dict.update(r=receptor_pdb, o=receptor_pdbqt)
@@ -1722,7 +1811,13 @@ class FlexibleReceptorController(BaseController):
         ad = AutoDock()
         form = self.form
         sele = form.sele_lstw.selectedItems()
-        # TODO: make it a popup
+
+        if len(sele) == 0:
+            self.logger.error(
+                'Select an option representing flexible residues please!'
+            )
+            return
+
         if len(sele) > 1:
             print('One selection at a time please!')
             self.logger.error('One selection at a time please!')
@@ -1758,6 +1853,10 @@ class FlexibleReceptorController(BaseController):
         residues will still be 'cached' in the session, and ready to be rerun. """
 
         working_dir = adContext.config['working_dir']
+        if working_dir == None:
+            print("Please specify the working directory first!")
+            self.logger.info("Please specify the working directory first!")
+            return
 
         # with while_in_dir(working_dir):
 
@@ -1766,6 +1865,11 @@ class FlexibleReceptorController(BaseController):
         receptor_pdbqt_dir = os.path.dirname(receptor_pdbqt)
 
         self.logger.info(f'Generating flexible residues ... {res_string}')
+
+        if not hasattr(ad, 'prepare_flexreceptor'):
+            print("Prepare flexreceptor was not loaded correctly! Make sure the paths are specified!")
+            self.logger.error("Prepare flexreceptor was not loaded correctly! Make sure the paths are specified!")
+            return
 
         ad.prepare_flexreceptor.attach_logging_module(LoggerAdapter(self.logger))
 
@@ -1836,36 +1940,39 @@ class ResultsModel(QtCore.QAbstractTableModel):
 class Vina:
 
     def __init__(self):
-        self.__dict__.update(self.load_commands())
+        self.load_commands()
+            
 
     def load_commands(self):
         adContext = ADContext()
         tools = {}
         VINA_MODULE_LOADED = module_loaded('vina')
         VINA_IN_PATH = in_path('vina')
-        command_name = 'vina'
 
         if not VINA_MODULE_LOADED and not VINA_IN_PATH:
             if adContext.config['vina_path'] is None:
-                print('ADContext here: vina_path not specified, returning')
-                return None
+                #full_command = os.path.join(adContext.config['vina_path'], command_name)
+                return
+                
             else:
-                full_command = os.path.join(adContext.config['vina_path'], command_name)
+                full_command = adContext.config['vina_path']
         else:
             full_command = 'vina'
 
         tools['vina'] = create_tool('Vina', full_command, None)()
+        self.__dict__.update(tools)
         adContext.vina_tools_loaded = True
         return tools
 
 
 class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContext
     tool_names = None
+    tools_loaded_successfuly = False
 
     def __init__(self):
         self.AD_MODULE_LOADED = module_loaded('ADFRSuite') or module_loaded('mgltools')
         self.load_command_names()
-        self.__dict__.update(self.load_commands())
+        self.load_commands()
 
     def load_command_names(self):
         adContext = ADContext()
@@ -1873,20 +1980,19 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
         if self.AD_MODULE_LOADED:
             self.tool_names = ['prepare_gpf', 'autogrid4', 'prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
         else:
-            if adContext.config['ad_tools_path'] is None:
-                print('ADContext here: AutoDockTools path not specified, returning')
+            if adContext.config['ad_tools_path'] is None: # TODO: (review) in case ad_tools_path is an empty string, invidual tools will fail to load, and will be caught upon command execution
                 return
 
-            # save the absolute pathes 
+            # save the absolute paths
             self.tool_names = [f for f in os.listdir(adContext.config['ad_tools_path']) if os.path.isfile(os.path.join(
-                adContext.config['ad_tools_path'], f))]
+            adContext.config['ad_tools_path'], f))]
 
     def load_commands(self):
         tools = {}
         adContext = ADContext()
 
         if self.tool_names is None:
-            print('AutoDock Tools could not be found in your system!')
+            #print('AutoDock Tools could not be found in your system!')
             return
 
         # Special care taken for autogrid4 executable
@@ -1911,7 +2017,9 @@ class AutoDock:  # circular imports, ADContext uses AutoDock which uses ADContex
                 full_command = os.path.join(adContext.config['ad_tools_path'], command_name)
                 tools[cls_name.lower()] = create_tool(cls_name, full_command, adContext.config['mgl_python_path'])()
 
+        self.__dict__.update(tools)
         adContext.ad_tools_loaded = True
+        #self.tools_loaded_successfuly = True
         return tools
 
 
@@ -1948,26 +2056,29 @@ class ADContext:
             self.affinity_map = None
             self.gpf = None
 
-            # TODO: remove those from config dict
-            self.config = {'vina_path': None, 
-                           'ad_tools_path': None, 
-                           'mgl_python_path': None, 
-                           'last_saved_box_path': None, 
-                           'box_path': None, 
-                           'output_file': None,
-                           'autogrid_path': None,
-                           'dockingjob_params': {
-                               'exhaustiveness': 8,
-                               'n_poses': 9,
-                               'min_rmsd': 1,
-                               'max_evals': 0,
-                               'scoring': 'vina',
-                               'energy_range': 3
-                           },
-                           'ligandjob_params': {
+            # TODO: remove these from config dict
+            self.config = { 'vina_path': None, 
+                            'ad_tools_path': None, 
+                            'mgl_python_path': None, 
+                            'last_saved_box_path': None, 
+                            'box_path': None, 
+                            'output_file': None,
+                            'autogrid_path': None,
+                            'dockingjob_params': {
+                                'exhaustiveness': 8,
+                                'n_poses': 9,
+                                'min_rmsd': 1,
+                                'max_evals': 0,
+                                'scoring': 'vina',
+                                'energy_range': 3
+                            },
+                            
+                            'ligandjob_params': {
                                'ph': None
-                           },
-                           'working_dir': os.getcwd()}
+                            },
+                           
+                           #'working_dir': os.getcwd() or None,
+                            'working_dir': None }
 
             self.ligand_to_dock = None
             self.ad_command_list = ['prepare_receptor', 'prepare_ligand', 'prepare_flexreceptor.py', 'ls']
@@ -2094,7 +2205,7 @@ def make_dialog():
     qDialog = QtWidgets.QDialog()
 
     # populate the Window from our *.ui file which was created with the Qt Designer
-    uifile = os.path.join(os.path.dirname(__file__), 'demowidget.ui')
+    uifile = os.path.join(os.path.dirname(__file__), 'magidockwidget.ui')
     form = loadUi(uifile, qDialog)
 
     adContext.setForm(form)
@@ -2240,10 +2351,12 @@ def make_dialog():
 
             boxAPI.set_center(centerX, centerY, centerZ)
             boxAPI.set_dim(dimX, dimY, dimZ)
+
             working_dir = adContext.config['working_dir']
-            if adContext.config['working_dir'] is not None:
-               if working_dir == None:
-                   working_dir = '' 
+            if working_dir == None:
+                print("Please specify the working directory first!")
+                logging.info("Please specify the working directory first!")
+                return
 
             box_save_path = os.path.join(working_dir, "current_box.txt")
             try:
@@ -2531,13 +2644,24 @@ def make_dialog():
             json.dump(adContext.config, f)
 
     def OnBrowseVinaClicked():
-        dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
-        adContext.config['vina_path'] = dir_name
-        #adContext.set_vina_tools_path(dir_name)
-        logger.info(f'vina_path = {dir_name}')
-        form.vinaPath_txt.setText(dir_name)
-        with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
-            json.dump(adContext.config, f)
+        # dir_name = str(QtWidgets.QFileDialog.getExistingDirectory(qDialog, "Select Directory"))
+        # adContext.config['vina_path'] = dir_name
+        # #adContext.set_vina_tools_path(dir_name)
+        # logger.info("Vina path = {}".format(dir_name))
+        # form.vinaPath_txt.setText(dir_name)
+        # with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+        #     json.dump(adContext.config, f)
+
+        filename = QtWidgets.QFileDialog.getOpenFileName(
+            qDialog, 'Open', filter='All Files (*.*)'
+        )
+
+        if filename != ('', ''):
+            form.vinaPath_txt.setText(filename[0])
+            adContext.config['vina_path'] = filename[0]
+            logger.info("Vina path = {}".format(adContext.config['vina_path']))
+            with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
+                json.dump(adContext.config, f)
 
     def OnBrowseConfigClicked():
         filename = QtWidgets.QFileDialog.getOpenFileName(
@@ -2571,7 +2695,6 @@ def make_dialog():
             with open(os.path.join(plugin_directory, 'config.json'), 'w') as f:
                 json.dump(adContext.config, f)
 
-        pass
 
     def onPHChange():
         adContext.config['ligandjob_params']['ph'] = float(
