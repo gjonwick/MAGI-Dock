@@ -22,3 +22,10 @@ A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vi
 
 ## Installing the plugin
 Download the repo and extract the files. Then, in PyMOL click on Plugin -> Plugin Manager -> Install New Plugin -> Install from local file (Choose File ...) and select the __init__.py file in the plugin folder. You can access the plugin from the Plugin tab in PyMOL.
+
+
+## Minor Bugs
+
+Trying to generate a box without specifying the working directory will cause the box to not be saved even after selecting a working dir. However, by temporary moving the box, the path will be generated automatically.
+
+Sometimes, the load prepared_receptor option in the Docking Tab is not able to read the .pdbqt file.

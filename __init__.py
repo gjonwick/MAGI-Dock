@@ -1178,7 +1178,7 @@ class DockingJobController(BaseController):
     def generateAffinityMaps(self, selectedLigands):
         """ Responsible for generating both gpf and affinity maps. """
 
-        if len(selctedLigands) == 0:
+        if len(selectedLigands) == 0:
             self.logger.error('Select a ligand first!')
             return
 
@@ -1321,6 +1321,9 @@ class VinaWorker(QtCore.QObject):
                 # the case with ad4 scoring is different, handle it in a separate function
                 if self.arg_dict['scoring'] == 'ad4':
                     arg_dict = self.ad_docking(ligand_to_dock, receptor)
+                    if arg_dict is None:
+                        self.finished.emit('Aborting!')
+                        return
                 else:
                     # (rc, stdout, stderr) = self.basic_docking(ligand_to_dock, receptor)
                     arg_dict = self.basic_docking(ligand_to_dock, receptor)
@@ -1338,7 +1341,7 @@ class VinaWorker(QtCore.QObject):
 
             try:
                 #adContext.config['output_file'] == arg_dict['out']
-                # TODO: add missing affinity maps error handling
+                # TODO: add missing affinity maps error handling # added above, where the ad4 case is handled
                 (rc, stdout, stderr) = self.vina.vina(**arg_dict)
                 self.progress.emit("return code = {}".format(rc))
                 if rc == 0:
@@ -1360,8 +1363,8 @@ class VinaWorker(QtCore.QObject):
         try:
             receptor_maps_dir = os.path.dirname(receptor.gpf)
         except Exception as e:
-            self.finished.emit(repr(e))
-            return
+            self.finished.emit('Please generate the affinity maps first!')
+            return None
 
         if flex_docking:
             rigid_receptor_pdbqt = receptor.rigid_pdbqt
