@@ -25,8 +25,8 @@ In the Config tab there are six options for the users to configure.
   - MGL python exe: should specify the path to the python executable that comes with the installation of MGL tools. e.g. /Program Files (x86)/MGLTools-1.5.7/python.exe. (MGLTools-1.5.7 will be used as the default in this tutorial.)
   - AutoDock Tools Folder: should specify the path to the autodock scripts, located in */MGLTools-1.5.7/Lib/site-packages/AutoDockTools/Utilities24
   - Vina Executable: should specify the path to the vina executable. A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases).
-  - Working Dir: should specify the directory (folder) where the working files will be generated, including receptor and ligand files, as well as results.
-  - Box Path: should specify the config file that will be used by Vina, and contains the docking box coordinates. It is recommended to keep only the coordinates in this file, since other running parameters can be specified in the plugin interface by the user.
+  - Working Dir: should specify the directory (folder) where the working files will be generated, including receptor and ligand files, as well as results. 
+  - Box Path: should specify the config file that will be used by Vina, and contains the docking box coordinates. It is recommended to keep only the coordinates in this file, since other running parameters can be specified in the plugin interface by the user. It is also generated automatically in the working directory, as soon as the users starts playing with the box coordinates in the plugin interface.
 
 If Vina scoring function will be used, this options are enough to run docking; otherwise, if Autodock4 will be used as the scoring function, the following option must be specified:  
   - Autogird Executable: should specify the path to autodock4 and autogrid executables. 
