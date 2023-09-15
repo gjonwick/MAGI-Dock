@@ -16,8 +16,20 @@ The plugin is designed to work in two types of environments.
 
 2. In the case of personal computers (which I guess would be the most popular option), the users have to make sure MGLTools is installed in their system and there is a vina executable somewhere in the system (the vina executable should be named vina.exe). The AutodockTools and vina executable folder path should be specified in the config tab of the plugin before starting the docking steps.
 
+3. If users shall use Autodock scoring function to run docking, Autodock4 and Autogrid executables should be installed. Autodock 4 can be found here: https://autodock.scripps.edu, and after the installation the executables can be found in: *C:\Program Files (x86)*\The Scripps Research Institute\Autodock\4.2.6
 
-A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases)
+
+
+## CONFIGURATION
+In the Config tab there are six options for the users to configure.
+  - MGL python exe: should specify the path to the python executable that comes with the installation of MGL tools. e.g. /Program Files (x86)/MGLTools-1.5.7/python.exe. (MGLTools-1.5.7 will be used as the default in this tutorial.)
+  - AutoDock Tools Folder: should specify the path to the autodock scripts, located in */MGLTools-1.5.7/Lib/site-packages/AutoDockTools/Utilities24
+  - Vina Executable: should specify the path to the vina executable. A vina executable can be found here: https://github.com/ccsb-scripps/AutoDock-Vina/releases (note: the plugin expects v1.2 releases).
+  - Working Dir: should specify the directory (folder) where the working files will be generated, including receptor and ligand files, as well as results.
+  - Box Path: should specify the config file that will be used by Vina, and contains the docking box coordinates. It is recommended to keep only the coordinates in this file, since other running parameters can be specified in the plugin interface by the user.
+
+If Vina scoring function will be used, this options are enough to run docking; otherwise, if Autodock4 will be used as the scoring function, the following option must be specified:  
+  - Autogird Executable: should specify the path to autodock4 and autogrid executables. 
 
 
 ## Installing the plugin
